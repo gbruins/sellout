@@ -33,6 +33,7 @@
         "@vitejs/plugin-vue": "6.0.8",
         "@vitest/eslint-plugin": "1.6.27",
         "@vue/eslint-config-typescript": "14.9.0",
+        "@vue/server-renderer": "3.5.42",
         "@vue/test-utils": "2.5.0",
         "@vue/tsconfig": "0.9.1",
         "autoprefixer": "10.6.1",
