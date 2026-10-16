@@ -58,8 +58,8 @@
 
 - [X] T021 [US2] Verify with curl the `open` status: menu with only published products, `menu: null` when none is assigned, and `remaining` equal to `inventory_count` minus paid quantity (no holds yet)
 - [X] T022 [P] [US2] Update `store/src/components/PizzaRemainingCountdown.vue` and `PizzaInventoryMatrix.vue` to take real `remaining` and total from the store (remove the hardcoded 30 and 60 in `HomeView.vue`)
-- [ ] T023 [US2] Update `store/src/components/PizzaList.vue` to render `menu.products` with price formatting (new `store/src/utils/format.js`, cents to dollars), keeping the `order` emit as the hand-off point for the future cart UI (spec `003-cart-checkout-ui`); show "menu not available yet" when `menu` is null; update `store/src/components/__tests__/PizzaList.spec.ts`
-- [ ] T024 [US2] Update `HomeView.vue` to render the open view for `open` status and add specs for it in `store/src/pages/__tests__/HomeView.spec.ts`
+- [X] T023 [US2] Update `store/src/components/PizzaList.vue` to render `menu.products` with price formatting (new `store/src/utils/format.js`, cents to dollars), keeping the `order` emit as the hand-off point for the future cart UI (spec `003-cart-checkout-ui`); show "menu not available yet" when `menu` is null; update `store/src/components/__tests__/PizzaList.spec.ts`
+- [X] T024 [US2] Update `HomeView.vue` to render the open view for `open` status and add specs for it in `store/src/pages/__tests__/HomeView.spec.ts`
 - [ ] T025 [US2] Verify end to end in the browser against the dev server using quickstart slice 1
 
 **Checkpoint**: US1 and US2 both work. First slice complete.
@@ -70,13 +70,13 @@
 
 **Independent Test**: Quickstart slice 2.
 
-- [ ] T026 [US3] Create `server/server/plugins/service/ServiceStream.js`: a hub holding connected responses, `subscribe(request)` returning a `PassThrough`, `publish()` that rebuilds the state and sends a `state` event with an increasing `id` only if it changed, a 25-second `: ping` heartbeat, a 3-second change-detecting tick that runs only while listeners exist, and a cap of `SERVICE_STREAMS_PER_IP` (default 50) concurrent streams per caller IP returning 429
-- [ ] T027 [US3] Add `GET /services/next/stream` to `server/server/plugins/service/index.js` and `streamHandler` to `ServiceController.js`: same auth, headers `Content-Type: text/event-stream`, `Cache-Control: no-cache`, `X-Accel-Buffering: no`, gzip and the socket timeout disabled for the route, first event is a full `state`, cleanup on disconnect
-- [ ] T028 [US3] Call `ServiceStream.publish()` after a checkout is started, cancelled, or completed in `server/server/plugins/cart/CheckoutService.js` and the webhook handler in `server/server/plugins/stripe/StripeController.js`
-- [ ] T029 [US3] Verify the stream with `curl -N`: initial `state`, change on a database edit within the tick, heartbeat, sixth connection gets 429, and no leaked listeners after disconnect
-- [ ] T030 [P] [US3] Create `store/src/utils/serviceStream.ts` wrapping `@microsoft/fetch-event-source` with the Basic-auth header, a `state` handler, automatic retry with backoff, pause while the tab is hidden, and callbacks for connected and disconnected
-- [ ] T031 [US3] Wire the stream into `store/src/stores/service.ts`: `connect()` and `disconnect()`, apply pushed state, set a `stale` flag while disconnected and clear it on the first state after reconnect, a local timer using the clock offset as a fallback for start and end boundaries (display only: it never enables ordering, which the server decides); start and stop it from `HomeView.vue` mount and unmount
-- [ ] T032 [P] [US3] Extend `store/src/stores/__tests__/service.spec.ts` with a fake stream and fake timers: pushed update, disconnect marks stale, reconnect shows the current count, boundary flip from `upcoming` to `open` and `open` to the next service
+- [X] T026 [US3] Create `server/server/plugins/service/ServiceStream.js`: a hub holding connected responses, `subscribe(request)` returning a `PassThrough`, `publish()` that rebuilds the state and sends a `state` event with an increasing `id` only if it changed, a 25-second `: ping` heartbeat, a 3-second change-detecting tick that runs only while listeners exist, and a cap of `SERVICE_STREAMS_PER_IP` (default 50) concurrent streams per caller IP returning 429
+- [X] T027 [US3] Add `GET /services/next/stream` to `server/server/plugins/service/index.js` and `streamHandler` to `ServiceController.js`: same auth, headers `Content-Type: text/event-stream`, `Cache-Control: no-cache`, `X-Accel-Buffering: no`, gzip and the socket timeout disabled for the route, first event is a full `state`, cleanup on disconnect
+- [X] T028 [US3] Call `ServiceStream.publish()` after a checkout is started, cancelled, or completed in `server/server/plugins/cart/CheckoutService.js` and the webhook handler in `server/server/plugins/stripe/StripeController.js`
+- [X] T029 [US3] Verify the stream with `curl -N`: initial `state`, change on a database edit within the tick, heartbeat, sixth connection gets 429, and no leaked listeners after disconnect
+- [X] T030 [P] [US3] Create `store/src/utils/serviceStream.ts` wrapping `@microsoft/fetch-event-source` with the Basic-auth header, a `state` handler, automatic retry with backoff, pause while the tab is hidden, and callbacks for connected and disconnected
+- [X] T031 [US3] Wire the stream into `store/src/stores/service.ts`: `connect()` and `disconnect()`, apply pushed state, set a `stale` flag while disconnected and clear it on the first state after reconnect, a local timer using the clock offset as a fallback for start and end boundaries (display only: it never enables ordering, which the server decides); start and stop it from `HomeView.vue` mount and unmount
+- [X] T032 [P] [US3] Extend `store/src/stores/__tests__/service.spec.ts` with a fake stream and fake timers: pushed update, disconnect marks stale, reconnect shows the current count, boundary flip from `upcoming` to `open` and `open` to the next service
 - [ ] T033 [US3] Verify quickstart slice 2 steps 1 to 5, including the load check with 100 simulated streams against SC-008 (raise `SERVICE_STREAMS_PER_IP` for the test), and test behind the real hosting or proxy once known, with `trustProxy` set
 
 **Checkpoint**: Live updates work.

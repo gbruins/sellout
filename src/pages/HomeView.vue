@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useServiceStore } from '@/stores/service'
 import PizzaInventoryMatrix from '@/components/PizzaInventoryMatrix.vue'
 import PizzaRemainingCountdown from '@/components/PizzaRemainingCountdown.vue'
@@ -9,7 +9,12 @@ import ServiceStatusNotice from '@/components/ServiceStatusNotice.vue'
 
 const service = useServiceStore()
 
-onMounted(() => service.load())
+onMounted(async () => {
+    await service.load()
+    service.connect()
+})
+
+onBeforeUnmount(() => service.disconnect())
 
 const isOpen = computed(() => service.status === 'open' || service.status === 'sold_out')
 const isClosed = computed(() => service.status === 'upcoming' || service.status === 'none')
@@ -17,16 +22,16 @@ const isClosed = computed(() => service.status === 'upcoming' || service.status 
 
 <template>
     <ServiceStatusNotice
-        v-if="service.error || (service.loading && !service.status)"
+        v-if="service.error || service.stale || (service.loading && !service.status)"
         :loading="service.loading"
-        :error="service.error"
+        :error="service.error || service.stale"
         @retry="service.retry()"
     />
 
     <template v-if="isOpen">
         <PizzaRemainingCountdown :remaining="service.remaining" :total="service.total" />
         <PizzaInventoryMatrix :total="service.total" :remaining="service.remaining" />
-        <PizzaList />
+        <PizzaList :menu="service.menu" :disabled="service.status === 'sold_out'" />
     </template>
 
     <ServiceClosedCard v-else-if="isClosed" :service="service.service" />

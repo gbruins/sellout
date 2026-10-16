@@ -3,6 +3,8 @@ import { createPinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import HomeView from '../HomeView.vue'
 
+vi.mock('@/utils/serviceStream', () => ({ openServiceStream: vi.fn(() => vi.fn()) }))
+
 const mountHome = (getNext: () => Promise<unknown>) =>
     mount(HomeView, {
         global: { plugins: [createPinia()], provide: { $api: { service: { getNext } } } },
@@ -30,6 +32,27 @@ describe('HomeView', () => {
         const wrapper = mountHome(async () => ({ ...base, status: 'open', service: win, remaining: 41, menu: null }))
         await flushPromises()
         expect(wrapper.get('[role="status"]').text()).toBe('41 pizzas remaining')
+    })
+
+    it('lists the menu products with prices when open', async () => {
+        const menu = { id: 'm', title: 'Menu', description: null, products: [{ id: 'p', title: 'Margherita', description: null, base_price: 2200 }] }
+        const wrapper = mountHome(async () => ({ ...base, status: 'open', service: win, remaining: 5, menu }))
+        await flushPromises()
+        expect(wrapper.text()).toContain('Margherita')
+        expect(wrapper.text()).toContain('$22.00')
+    })
+
+    it('shows the menu-not-available message when open without a menu', async () => {
+        const wrapper = mountHome(async () => ({ ...base, status: 'open', service: win, remaining: 5, menu: null }))
+        await flushPromises()
+        expect(wrapper.text()).toContain('Menu not available yet')
+    })
+
+    it('disables ordering when sold out', async () => {
+        const menu = { id: 'm', title: 'Menu', description: null, products: [{ id: 'p', title: 'Margherita', description: null, base_price: 2200 }] }
+        const wrapper = mountHome(async () => ({ ...base, status: 'sold_out', service: win, remaining: 0, menu }))
+        await flushPromises()
+        expect(wrapper.get('li button').attributes('disabled')).toBeDefined()
     })
 
     it('shows an error notice and retries', async () => {
