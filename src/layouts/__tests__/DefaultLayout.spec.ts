@@ -1,27 +1,17 @@
 import { mount } from '@vue/test-utils'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createPinia } from 'pinia'
+import { describe, expect, it } from 'vitest'
 import DefaultLayout from '../DefaultLayout.vue'
 
 describe('DefaultLayout', () => {
-    afterEach(() => {
-        vi.useRealTimers()
-    })
-
-    it('decrements the sample pizza count after 44 seconds', async () => {
-        vi.useFakeTimers()
+    it('renders only the slot content, with no home page content of its own', () => {
         const wrapper = mount(DefaultLayout, {
-            global: {
-                stubs: ['RouterLink'],
-            },
-            slots: {
-                default: '<div>Page content</div>',
-            },
+            global: { plugins: [createPinia()], stubs: ['RouterLink'] },
+            slots: { default: '<div>Page content</div>' },
         })
 
-        expect(wrapper.get('[role="status"]').text()).toBe('14 pizzas remaining')
-        await vi.advanceTimersByTimeAsync(44_000)
-        expect(wrapper.get('[role="status"]').text()).toBe('13 pizzas remaining')
-
-        wrapper.unmount()
+        expect(wrapper.text()).toContain('Page content')
+        expect(wrapper.find('[role="status"]').exists()).toBe(false)
+        expect(wrapper.text()).not.toContain('Pizzas remaining')
     })
 })

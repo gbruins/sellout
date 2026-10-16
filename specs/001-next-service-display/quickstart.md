@@ -12,6 +12,29 @@ and [data-model.md](./data-model.md).
 - Storefront `.env` with `VITE_API_BASE_URL`, `VITE_API_USER`, `VITE_API_KEY`.
 - Use temporary rows and delete them afterwards.
 
+## Throwaway server (repeatable setup)
+
+From `/Users/bruins/Sites/strawberry-server`. The dev database is shared, so only add rows
+whose names start with `TMPTEST` and delete them afterwards.
+
+```sh
+# 1. Hash for the test key "testkey123" (bcryptjs)
+H=$(node -e "import('bcryptjs').then(b=>console.log((b.default||b).hashSync('testkey123',10)))")
+
+# 2. Start on a spare port, plain HTTP
+API_KEY_HASH="$H" PORT=10077 SERVER_TLS=false node --require dotenv/config server/index.js &
+
+# 3. Call it
+curl -s -u store:testkey123 http://localhost:10077/api/v1/services/next
+
+# 4. Stop it: find the pid with `lsof -ti tcp:10077`, then `kill <pid>`
+```
+
+Temporary rows are inserted with a small `node --require dotenv/config` script that uses
+`server/db/knex.js` to add a `TMPTEST` menu, published and unpublished Pizza products
+(`product_type: 1`), the junction rows and a `service` row, and removes everything where
+the title or notes start with `TMPTEST` when done.
+
 ## Slice 1: state and display
 
 | Scenario | Setup | Expect |

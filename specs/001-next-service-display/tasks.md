@@ -15,20 +15,20 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 Add the dependency `@microsoft/fetch-event-source` to `store/package.json` (npm install, commit lock file)
-- [ ] T002 [P] Add the exact throwaway-server commands (spare port, hashed test key, temporary rows, cleanup) to `store/specs/001-next-service-display/quickstart.md` so every curl check is repeatable
+- [X] T001 Add the dependency `@microsoft/fetch-event-source` to `store/package.json` (npm install, commit lock file)
+- [X] T002 [P] Add the exact throwaway-server commands (spare port, hashed test key, temporary rows, cleanup) to `store/specs/001-next-service-display/quickstart.md` so every curl check is repeatable
 
 ## Phase 2: Foundational (blocks all stories)
 
-- [ ] T003 Create migration `server/server/db/migrations/80_service_holds.js` adding `service.max_per_order` (integer, not null, default 4, minimum 1), `carts.service_id` (uuid, nullable, FK to `service.id`), `carts.checkout_expires_at` (timestamptz, nullable) and an index on `carts (service_id)`; include a working `down`
-- [ ] T004 Run the migration on the dev database and confirm the columns exist
-- [ ] T005 [P] Add `max_per_order: Joi.number().integer().min(1)` to the schema in `server/server/plugins/service/ServiceModel.js`
-- [ ] T006 [P] Add `service_id` (uuid, allow null) and `checkout_expires_at` (date, allow null) to `server/server/plugins/cart/CartModel.js`, and verify store callers still cannot write them (the billing-only restriction in `server/server/plugins/cart/cartAccess.js` already blocks other fields; add a curl check)
-- [ ] T007 Create `server/server/plugins/service/ServiceState.js` exporting `buildState(now = new Date())` that returns the contract object: pick the service with `end_at > now` and the earliest `start_at`; status `open`, `sold_out`, `upcoming` or `none`; `server_now`; published menu with published products only; `next_service` when sold out. In this slice `remaining` is `max(0, inventory_count - paid_qty)` where `paid_qty` is the quantity of pizza items (product type slug `pizza`) on closed carts with that `service_id`
-- [ ] T008 Create `store/src/utils/shopTime.ts` exporting formatters (date, time, range) that use `Intl.DateTimeFormat` with `timeZone: 'America/Los_Angeles'` and label the zone
-- [ ] T009 [P] Add `store/src/utils/__tests__/shopTime.spec.ts` covering a UTC instant on both sides of the daylight saving change and a visitor zone different from Los Angeles
-- [ ] T010 Create `store/src/api/service.js` with `getNext()` calling `GET /services/next`, and register it in `store/src/plugins/api.js` next to `auth` and `cart`
-- [ ] T011 Create the Pinia store `store/src/stores/service.ts` with state (`status`, `service`, `remaining`, `menu`, `nextService`, `loading`, `error`, `serverOffsetMs`), `load()` (stores `server_now - Date.now()` as the offset), `retry()`, and a `now()` helper that applies the offset
+- [X] T003 Create migration `server/server/db/migrations/80_service_holds.js` adding `service.max_per_order` (integer, not null, default 4, minimum 1), `carts.service_id` (uuid, nullable, FK to `service.id`), `carts.checkout_expires_at` (timestamptz, nullable) and an index on `carts (service_id)`; include a working `down`
+- [X] T004 Run the migration on the dev database and confirm the columns exist
+- [X] T005 [P] Add `max_per_order: Joi.number().integer().min(1)` to the schema in `server/server/plugins/service/ServiceModel.js`
+- [X] T006 [P] Add `service_id` (uuid, allow null) and `checkout_expires_at` (date, allow null) to `server/server/plugins/cart/CartModel.js`, and verify store callers still cannot write them (the billing-only restriction in `server/server/plugins/cart/cartAccess.js` already blocks other fields; add a curl check)
+- [X] T007 Create `server/server/plugins/service/ServiceState.js` exporting `buildState(now = new Date())` that returns the contract object: pick the service with `end_at > now` and the earliest `start_at`; status `open`, `sold_out`, `upcoming` or `none`; `server_now`; published menu with published products only; `next_service` when sold out. In this slice `remaining` is `max(0, inventory_count - paid_qty)` where `paid_qty` is the quantity of pizza items (product type slug `pizza`) on closed carts with that `service_id`
+- [X] T008 Create `store/src/utils/shopTime.ts` exporting formatters (date, time, range) that use `Intl.DateTimeFormat` with `timeZone: 'America/Los_Angeles'` and label the zone
+- [X] T009 [P] Add `store/src/utils/__tests__/shopTime.spec.ts` covering a UTC instant on both sides of the daylight saving change and a visitor zone different from Los Angeles
+- [X] T010 Create `store/src/api/service.js` with `getNext()` calling `GET /services/next`, and register it in `store/src/plugins/api.js` next to `auth` and `cart`
+- [X] T011 Create the Pinia store `store/src/stores/service.ts` with state (`status`, `service`, `remaining`, `menu`, `nextService`, `loading`, `error`, `serverOffsetMs`), `load()` (stores `server_now - Date.now()` as the offset), `retry()`, and a `now()` helper that applies the offset
 
 **Checkpoint**: Schema, state builder, time helper and store skeleton exist.
 
@@ -38,15 +38,15 @@
 
 **Independent Test**: Quickstart slice 1 rows "No services", "Upcoming", "Earliest wins", "Time zone", "Error".
 
-- [ ] T012 [US1] Add `GET /services/next` to `server/server/plugins/service/index.js` with `auth: { strategies: ['apiKey', 'adminCookie'] }`, a `nextHandler` in `server/server/plugins/service/ServiceController.js` calling `buildState`, and no rate-limit change. Declare it before `/service` routes so it is not shadowed
-- [ ] T013 [US1] Verify with curl against a throwaway server: statuses `none`, `upcoming` and earliest-wins, a 401 without the key, and that `server_now` is present. Delete the temporary rows afterwards. Also check exact start and end boundaries and a service ending as the next begins (see T053)
-- [ ] T014 [P] [US1] Create `store/src/components/ServiceClosedCard.vue` showing start and end (using `shopTime`), notes when present, and the empty message "No service scheduled" when status is `none`; style to match the dark zinc and orange theme
-- [ ] T015 [P] [US1] Create `store/src/components/ServiceStatusNotice.vue` for the loading, error and "may be out of date" notices, with a retry button wired to `retry()`
-- [ ] T016 [US1] Update `store/src/pages/HomeView.vue` to call `load()` on mount and render by status: closed card for `upcoming` and `none`, notice for loading and error
-- [ ] T017 [US1] Move the home content out of `store/src/layouts/DefaultLayout.vue` into `HomeView.vue` so other routes (for example `/order/complete`) do not show it, and replace the stale `store/src/layouts/__tests__/DefaultLayout.spec.ts`
-- [ ] T018 [US1] Make `store/src/components/StoreOpenBadge.vue` follow the store status ("Open Now" only when `open`, otherwise a closed label) and update `AppHeader.vue` if it needs a prop
-- [ ] T019 [P] [US1] Add `store/src/stores/__tests__/service.spec.ts`: status mapping, clock offset with a wrong device clock, error and retry
-- [ ] T020 [P] [US1] Add `store/src/pages/__tests__/HomeView.spec.ts` for the closed, empty and error views
+- [X] T012 [US1] Add `GET /services/next` to `server/server/plugins/service/index.js` with `auth: { strategies: ['apiKey', 'adminCookie'] }`, a `nextHandler` in `server/server/plugins/service/ServiceController.js` calling `buildState`, and no rate-limit change. Declare it before `/service` routes so it is not shadowed
+- [X] T013 [US1] Verify with curl against a throwaway server: statuses `none`, `upcoming` and earliest-wins, a 401 without the key, and that `server_now` is present. Delete the temporary rows afterwards. Also check exact start and end boundaries and a service ending as the next begins (see T053)
+- [X] T014 [P] [US1] Create `store/src/components/ServiceClosedCard.vue` showing start and end (using `shopTime`), notes when present, and the empty message "No service scheduled" when status is `none`; style to match the dark zinc and orange theme
+- [X] T015 [P] [US1] Create `store/src/components/ServiceStatusNotice.vue` for the loading, error and "may be out of date" notices, with a retry button wired to `retry()`
+- [X] T016 [US1] Update `store/src/pages/HomeView.vue` to call `load()` on mount and render by status: closed card for `upcoming` and `none`, notice for loading and error
+- [X] T017 [US1] Move the home content out of `store/src/layouts/DefaultLayout.vue` into `HomeView.vue` so other routes (for example `/order/complete`) do not show it, and replace the stale `store/src/layouts/__tests__/DefaultLayout.spec.ts`
+- [X] T018 [US1] Make `store/src/components/StoreOpenBadge.vue` follow the store status ("Open Now" only when `open`, otherwise a closed label) and update `AppHeader.vue` if it needs a prop
+- [X] T019 [P] [US1] Add `store/src/stores/__tests__/service.spec.ts`: status mapping, clock offset with a wrong device clock, error and retry
+- [X] T020 [P] [US1] Add `store/src/pages/__tests__/HomeView.spec.ts` for the closed, empty and error views
 
 **Checkpoint**: US1 works alone. This is the MVP.
 
@@ -56,8 +56,8 @@
 
 **Independent Test**: Quickstart slice 1 rows "Open", "Unpublished hidden", "No menu".
 
-- [ ] T021 [US2] Verify with curl the `open` status: menu with only published products, `menu: null` when none is assigned, and `remaining` equal to `inventory_count` minus paid quantity (no holds yet)
-- [ ] T022 [P] [US2] Update `store/src/components/PizzaRemainingCountdown.vue` and `PizzaInventoryMatrix.vue` to take real `remaining` and total from the store (remove the hardcoded 30 and 60 in `HomeView.vue`)
+- [X] T021 [US2] Verify with curl the `open` status: menu with only published products, `menu: null` when none is assigned, and `remaining` equal to `inventory_count` minus paid quantity (no holds yet)
+- [X] T022 [P] [US2] Update `store/src/components/PizzaRemainingCountdown.vue` and `PizzaInventoryMatrix.vue` to take real `remaining` and total from the store (remove the hardcoded 30 and 60 in `HomeView.vue`)
 - [ ] T023 [US2] Update `store/src/components/PizzaList.vue` to render `menu.products` with price formatting (new `store/src/utils/format.js`, cents to dollars), keeping the `order` emit as the hand-off point for the future cart UI (spec `003-cart-checkout-ui`); show "menu not available yet" when `menu` is null; update `store/src/components/__tests__/PizzaList.spec.ts`
 - [ ] T024 [US2] Update `HomeView.vue` to render the open view for `open` status and add specs for it in `store/src/pages/__tests__/HomeView.spec.ts`
 - [ ] T025 [US2] Verify end to end in the browser against the dev server using quickstart slice 1

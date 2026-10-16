@@ -3,6 +3,7 @@ import qs from 'qs';
 import isObject from 'lodash.isobject';
 import Auth from '@/api/auth';
 import Cart from '@/api/cart';
+import Service from '@/api/service';
 import { getCartCredentials } from '@/utils/cartCredentials';
 
 export let axiosInstance = null;
@@ -131,7 +132,8 @@ export default {
 
         app.provide('$api', {
             auth: Auth(utils, axiosInstance),
-            cart: Cart(utils, axiosInstance)
+            cart: Cart(utils, axiosInstance),
+            service: Service(utils, axiosInstance)
         });
 
         axiosInstance.interceptors.response.use(

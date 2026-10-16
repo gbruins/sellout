@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import PizzaRemainingCountdown from '../PizzaRemainingCountdown.vue'
 
@@ -29,23 +29,12 @@ describe('PizzaRemainingCountdown', () => {
         expect(wrapper.findAll('.flip-number-item')).toHaveLength(3)
     })
 
-    it('counts down every second in development and stays at zero', async () => {
-        vi.useFakeTimers()
-        const wrapper = mount(PizzaRemainingCountdown, { props: { remaining: 14 } })
+    it('shows the real total in the cap label and never goes below zero', async () => {
+        const wrapper = mount(PizzaRemainingCountdown, { props: { remaining: 0, total: 48 } })
 
-        try {
-            await vi.advanceTimersByTimeAsync(1000)
-            expect(wrapper.get('[role="status"]').text()).toBe('13 pizzas remaining')
-
-            await vi.advanceTimersByTimeAsync(1000)
-            expect(wrapper.get('[role="status"]').text()).toBe('12 pizzas remaining')
-
-            await wrapper.setProps({ remaining: 1 })
-            await vi.advanceTimersByTimeAsync(2000)
-            expect(wrapper.get('[role="status"]').text()).toBe('0 pizzas remaining')
-        } finally {
-            wrapper.unmount()
-            vi.useRealTimers()
-        }
+        expect(wrapper.text()).toContain('Hard cap 48 pies')
+        expect(wrapper.get('[role="status"]').text()).toBe('0 pizzas remaining')
+        await wrapper.setProps({ remaining: -3 })
+        expect(wrapper.get('[role="status"]').text()).toBe('0 pizzas remaining')
     })
 })

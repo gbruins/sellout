@@ -2,8 +2,9 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import FlipNumber from './flipNumber/FlipNumber.vue'
 
-const props = withDefaults(defineProps<{ remaining?: number }>(), {
+const props = withDefaults(defineProps<{ remaining?: number, total?: number }>(), {
     remaining: 14,
+    total: 60,
 })
 
 const testCount = ref(props.remaining)
@@ -39,7 +40,7 @@ watch(() => props.remaining, (remaining) => {
     <section class="bg-zinc-950 px-4 py-10 text-zinc-100 sm:py-14" aria-labelledby="pizza-count-title">
         <div class="mx-auto w-full max-w-2xl">
             <div class="mb-4 flex items-center justify-between gap-4 border-b border-zinc-800 pb-3 font-mono text-[10px] uppercase tracking-widest sm:text-xs">
-                <p class="text-zinc-500"><span class="font-bold text-orange-500">Batch #04</span><span class="mx-2 text-zinc-700">//</span>Hard cap 60 pies</p>
+                <p class="text-zinc-500"><span class="font-bold text-orange-500">Batch #04</span><span class="mx-2 text-zinc-700">//</span>Hard cap {{ total }} pies</p>
                 <p class="shrink-0 font-bold text-amber-400">Claim velocity: 1 pie / 44s</p>
             </div>
 
