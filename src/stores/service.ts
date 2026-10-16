@@ -37,7 +37,7 @@ export interface ServiceState {
 }
 
 export const useServiceStore = defineStore('service', () => {
-    const api = inject<any>('$api')
+    const api = inject<Record<string, any>>('$api') // eslint-disable-line @typescript-eslint/no-explicit-any
 
     const status = ref<ServiceStatus | null>(null)
     const service = ref<ServiceWindow | null>(null)
