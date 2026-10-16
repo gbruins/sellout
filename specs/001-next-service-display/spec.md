@@ -124,9 +124,9 @@ The store manager, when creating or editing a service in the admin, picks which 
 - **FR-013**: The header open or closed badge MUST reflect the same state as the page.
 - **FR-014**: The store manager MUST be able to assign a menu to a service in the admin.
 - **FR-015**: The page MUST show a friendly error with a retry when service data cannot be loaded.
+- **FR-016**: A cart belongs to the service it was started for. When that service ends, the cart MUST be emptied and the customer told why, so items from one menu never carry into another service. A checkout already in progress MUST NOT be affected.
 - **FR-017**: While a visitor has the open view showing, the server MUST push changes to the remaining count (and to the open, sold-out and ended state) to the page as they happen. The page MUST NOT depend on the visitor reloading or on frequent repeated requests to stay accurate.
 - **FR-018**: If the live connection drops, the page MUST reconnect automatically, show the current count on reconnect, and indicate to the visitor that the count may be out of date while disconnected.
-- **FR-016**: A cart belongs to the service it was started for. When that service ends, the cart MUST be emptied and the customer told why, so items from one menu never carry into another service. A checkout already in progress MUST NOT be affected.
 
 ### Key Entities
 
@@ -143,11 +143,11 @@ The store manager, when creating or editing a service in the admin, picks which 
 - **SC-001**: A first-time visitor can tell whether the shop is open and when it next opens within 5 seconds of the page loading.
 - **SC-002**: The page's open or closed state agrees with the scheduled window for 100% of test cases, including across daylight saving changes.
 - **SC-003**: A visitor with an open page sees the state change within 1 minute of a service starting or ending.
-- **SC-008**: When a pizza is held, sold or released, every open page shows the new count within 3 seconds in at least 95% of cases, with 100 pages open at once.
 - **SC-004**: No checkout can be started for a closed service or beyond its pizza inventory in 100% of test cases.
 - **SC-005**: The remaining count shown is never more than one order out of date at load time.
 - **SC-006**: Unpublished menus and products are never visible to visitors in any test.
 - **SC-007**: The manager can schedule a service with a menu and see it appear on the storefront without developer help.
+- **SC-008**: When a pizza is held, sold or released, every open page shows the new count within 3 seconds in at least 95% of cases, with 100 pages open at once.
 
 ## Assumptions
 
