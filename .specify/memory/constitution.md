@@ -1,50 +1,61 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# Sell Out Pizza Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Server Owns the Truth
+Prices, totals, tax, inventory and service availability MUST be computed on
+Strawberry Server from database values. The storefront and admin are presentation
+layers and MUST NOT be trusted for money or stock. Checkout line items MUST be built
+from current DB product prices, and only published products may be sold.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Store Access Is Least-Privilege
+The storefront authenticates with the store Basic-auth key and is treated as a public,
+non-secret client. Server routes MUST be default-deny (admin cookie) and opt in to store
+access explicitly. Anonymous carts MUST be protected by a per-cart token, stored only as
+a SHA-256 hash. Store callers MUST NOT see unpublished data or admin-only fields.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. Cards Only, Stripe-Hosted
+Payment is by card through Stripe Checkout only. Card data MUST never touch our code.
+Order completion MUST happen in the signature-verified webhook and MUST be idempotent.
+A cart with an open checkout session MUST reject edits.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Pickup Only
+The shop does not deliver. Features MUST NOT add delivery addresses, delivery fees or
+street restrictions to the storefront flow unless this principle is amended first.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### V. Time Is UTC, Displayed in Los Angeles Time
+The server MUST store and compare all timestamps in UTC. The storefront and the admin
+MUST display times in the America/Los_Angeles time zone, never the visitor's local zone.
+Display conversion happens in the UIs only.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+### VI. Verify Before Done
+Every behavior change MUST be verified: server routes by live request tests, storefront
+logic by vitest. Changes MUST NOT be committed with failing tests they caused.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### VII. Specs Span Repos
+Features that touch more than one repo are specified once, in this repo's `specs/`
+folder. Each plan MUST list the changes per repo (server, admin, storefront).
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+## Additional Constraints
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+- Stack: Vue 3, Pinia and Tailwind storefront; Vue admin; Hapi, Knex and Postgres server.
+- Secrets live in `.env` files and MUST NOT be committed. Only the hash of the store key
+  is stored server-side.
+- Known deferred work is tracked in `TODO.md`.
+
+## Development Workflow
+
+- Features that touch more than one repo or change behavior follow specify, plan, tasks,
+  implement, converge. Small fixes MAY skip the spec.
+- Commits are small and per repo, with only the author's own changes staged. Nothing is
+  pushed without the owner's go-ahead.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This constitution supersedes other practices. Amendments are made through
+`/speckit-constitution` and versioned with semantic versioning: MAJOR for removed or
+redefined principles, MINOR for new principles or materially expanded guidance, PATCH for
+wording. Every plan MUST be checked against these principles, and any exception MUST be
+justified in the plan.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2026-10-16 | **Last Amended**: 2026-10-16
