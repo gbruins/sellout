@@ -60,7 +60,7 @@
 - [X] T022 [P] [US2] Update `store/src/components/PizzaRemainingCountdown.vue` and `PizzaInventoryMatrix.vue` to take real `remaining` and total from the store (remove the hardcoded 30 and 60 in `HomeView.vue`)
 - [X] T023 [US2] Update `store/src/components/PizzaList.vue` to render `menu.products` with price formatting (new `store/src/utils/format.js`, cents to dollars), keeping the `order` emit as the hand-off point for the future cart UI (spec `003-cart-checkout-ui`); show "menu not available yet" when `menu` is null; update `store/src/components/__tests__/PizzaList.spec.ts`
 - [X] T024 [US2] Update `HomeView.vue` to render the open view for `open` status and add specs for it in `store/src/pages/__tests__/HomeView.spec.ts`
-- [ ] T025 [US2] Verify end to end in the browser against the dev server using quickstart slice 1
+- [X] T025 [US2] Verify end to end in the browser against the dev server using quickstart slice 1
 
 **Checkpoint**: US1 and US2 both work. First slice complete.
 
@@ -77,7 +77,7 @@
 - [X] T030 [P] [US3] Create `store/src/utils/serviceStream.ts` wrapping `@microsoft/fetch-event-source` with the Basic-auth header, a `state` handler, automatic retry with backoff, pause while the tab is hidden, and callbacks for connected and disconnected
 - [X] T031 [US3] Wire the stream into `store/src/stores/service.ts`: `connect()` and `disconnect()`, apply pushed state, set a `stale` flag while disconnected and clear it on the first state after reconnect, a local timer using the clock offset as a fallback for start and end boundaries (display only: it never enables ordering, which the server decides); start and stop it from `HomeView.vue` mount and unmount
 - [X] T032 [P] [US3] Extend `store/src/stores/__tests__/service.spec.ts` with a fake stream and fake timers: pushed update, disconnect marks stale, reconnect shows the current count, boundary flip from `upcoming` to `open` and `open` to the next service
-- [ ] T033 [US3] Verify quickstart slice 2 steps 1 to 5, including the load check with 100 simulated streams against SC-008 (raise `SERVICE_STREAMS_PER_IP` for the test), and test behind the real hosting or proxy once known, with `trustProxy` set
+- [X] T033 [US3] Verify quickstart slice 2 steps 1 to 5, including the load check with 100 simulated streams against SC-008 (raise `SERVICE_STREAMS_PER_IP` for the test), and test behind the real hosting or proxy once known, with `trustProxy` set
 
 **Checkpoint**: Live updates work.
 
