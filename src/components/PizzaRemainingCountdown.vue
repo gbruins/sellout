@@ -16,23 +16,23 @@ watch(() => props.remaining, (remaining) => {
     testCount.value = remaining
 })
 
-let testTimer: ReturnType<typeof setTimeout> | undefined
+// let testTimer: ReturnType<typeof setTimeout> | undefined
 
-onMounted(() => {
-    if (!import.meta.env.DEV) return
+// onMounted(() => {
+//     if (!import.meta.env.DEV) return
 
-    const advanceTestCount = () => {
-        testCount.value = Math.max(0, testCount.value - 1)
-        console.log(testCount.value)
-        testTimer = setTimeout(advanceTestCount, 1000)
-    }
+//     const advanceTestCount = () => {
+//         testCount.value = Math.max(0, testCount.value - 1)
+//         console.log(testCount.value)
+//         testTimer = setTimeout(advanceTestCount, 1000)
+//     }
 
-    testTimer = setTimeout(advanceTestCount, 1000)
-})
+//     testTimer = setTimeout(advanceTestCount, 1000)
+// })
 
-onBeforeUnmount(() => {
-    if (testTimer) clearTimeout(testTimer)
-})
+// onBeforeUnmount(() => {
+//     if (testTimer) clearTimeout(testTimer)
+// })
 </script>
 
 <template>
