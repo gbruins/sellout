@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from 'vue';
 import apiPlugin, { axiosInstance } from '@/plugins/api';
+import { createPinia, setActivePinia } from 'pinia';
 import { getCartCredentials, saveCartCredentials } from '@/utils/cartCredentials';
+import { useCartNoticeStore } from '@/stores/cartNotice';
+import { cartErrorMessage } from '@/utils/cartErrors';
 
 function installApi() {
     const app = createApp({});
@@ -60,5 +63,55 @@ describe('api auth wiring', () => {
         expect(request.url).toBe('cart/checkout');
         expect(JSON.parse(request.data)).toEqual({ id: 'cart-1' });
         expect(response.data.url).toBe('https://checkout.stripe.com/x');
+    });
+
+    it('shows the one-time notice when the server reports the cart was reset', async () => {
+        setActivePinia(createPinia());
+        const $api = installApi();
+        saveCartCredentials('cart-1', 'tok-1');
+        axiosInstance.defaults.adapter = async (config) => ({
+            data: { data: { id: 'cart-1', cart_items: [], cart_reset: 'service_ended' } },
+            status: 200, statusText: 'OK', headers: {}, config,
+        });
+
+        await $api.cart.get();
+
+        expect(useCartNoticeStore().message).toContain('cart was emptied');
+        expect(getCartCredentials().id).toBe('cart-1');
+    });
+
+    it('forgets the stored cart when the server says it is gone', async () => {
+        const $api = installApi();
+        saveCartCredentials('cart-1', 'tok-1');
+        axiosInstance.defaults.adapter = async (config) => {
+            const error = new Error('Not Found');
+            error.response = { status: 404, data: {}, config };
+            error.config = config;
+            throw error;
+        };
+
+        await expect($api.cart.get()).rejects.toThrow();
+
+        expect(getCartCredentials()).toEqual({ id: null, token: null });
+    });
+});
+
+describe('cartErrorMessage', () => {
+    const conflict = (data) => ({ response: { status: 409, data: { data } } });
+
+    it('explains service hours and sold out', () => {
+        expect(cartErrorMessage(conflict({ code: 'no_open_service' }))).toBe('The shop is not open right now.');
+        expect(cartErrorMessage(conflict({ code: 'service_closed' }))).toBe('The shop is not open right now.');
+        expect(cartErrorMessage(conflict({ code: 'sold_out' }))).toBe('Sorry, we are sold out.');
+    });
+
+    it('uses the lower of the order cap and the pizzas remaining', () => {
+        expect(cartErrorMessage(conflict({ code: 'over_limit', max_per_order: 4, remaining: 9 }))).toBe('You can order up to 4 pizzas.');
+        expect(cartErrorMessage(conflict({ code: 'over_limit', max_per_order: 4, remaining: 1 }))).toBe('You can order up to 1 pizza.');
+    });
+
+    it('falls back to the server message or a generic one', () => {
+        expect(cartErrorMessage({ response: { status: 400, data: { message: 'Cart is empty' } } })).toBe('Cart is empty');
+        expect(cartErrorMessage(new Error('x'))).toBe('Something went wrong. Please try again.');
     });
 });

@@ -48,6 +48,14 @@ describe('HomeView', () => {
         expect(wrapper.text()).toContain('Menu not available yet')
     })
 
+    it('shows sold out with the next service time', async () => {
+        const next = { ...win, id: 'n', start_at: '2026-10-24T19:00:00.000Z', end_at: '2026-10-25T02:00:00.000Z', notes: null }
+        const wrapper = mountHome(async () => ({ ...base, status: 'sold_out', service: win, remaining: 0, menu: null, next_service: next }))
+        await flushPromises()
+        expect(wrapper.text()).toContain("sold out")
+        expect(wrapper.get('[data-test="service-range"]').text()).toBe('Saturday, October 24, 12:00 PM – 7:00 PM PDT')
+    })
+
     it('disables ordering when sold out', async () => {
         const menu = { id: 'm', title: 'Menu', description: null, products: [{ id: 'p', title: 'Margherita', description: null, base_price: 2200 }] }
         const wrapper = mountHome(async () => ({ ...base, status: 'sold_out', service: win, remaining: 0, menu }))

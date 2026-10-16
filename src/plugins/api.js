@@ -5,6 +5,7 @@ import Auth from '@/api/auth';
 import Cart from '@/api/cart';
 import Service from '@/api/service';
 import { getCartCredentials } from '@/utils/cartCredentials';
+import { useCartNoticeStore } from '@/stores/cartNotice';
 
 export let axiosInstance = null;
 
@@ -137,7 +138,14 @@ export default {
         });
 
         axiosInstance.interceptors.response.use(
-            (response) => response,
+            (response) => {
+                // The server empties a cart left over from an ended service and says so once
+                if(response?.data?.data?.cart_reset === 'service_ended') {
+                    useCartNoticeStore().showReset();
+                }
+
+                return response;
+            },
             (error) => {
                 if (error.response) {
                     const errorCode = parseInt(error?.response?.status, 10);

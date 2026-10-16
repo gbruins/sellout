@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import type { ServiceWindow } from '@/stores/service'
 import { formatShopRange } from '@/utils/shopTime'
 
-const props = defineProps<{ service: ServiceWindow | null }>()
+const props = defineProps<{ service: ServiceWindow | null, soldOut?: boolean }>()
 
 const range = computed(() => props.service ? formatShopRange(props.service.start_at, props.service.end_at) : '')
 </script>
@@ -12,7 +12,7 @@ const range = computed(() => props.service ? formatShopRange(props.service.start
     <section class="mx-auto w-full max-w-2xl px-4 py-12 text-center sm:py-16" aria-labelledby="service-closed-title">
         <div class="border border-zinc-800 bg-zinc-900/40 px-4 py-10 sm:px-8">
             <p class="mb-3 font-mono text-[10px] font-semibold uppercase tracking-[0.3em] text-orange-500">
-                We're closed right now
+                {{ soldOut ? "We're sold out for tonight" : "We're closed right now" }}
             </p>
 
             <template v-if="service">

@@ -31,6 +31,7 @@ const isClosed = computed(() => service.status === 'upcoming' || service.status 
     <template v-if="isOpen">
         <PizzaRemainingCountdown :remaining="service.remaining" :total="service.total" />
         <PizzaInventoryMatrix :total="service.total" :remaining="service.remaining" />
+        <ServiceClosedCard v-if="service.status === 'sold_out'" sold-out :service="service.nextService" />
         <PizzaList :menu="service.menu" :disabled="service.status === 'sold_out'" />
     </template>
 

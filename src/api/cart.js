@@ -14,8 +14,18 @@ export default (utils) => {
             return response;
         },
 
-        get: (config) => {
-            return utils.$get('cart', { id: getCartCredentials().id }, config);
+        // A 404 means the cart no longer exists, so the stored credentials are useless
+        get: async (config) => {
+            try {
+                return await utils.$get('cart', { id: getCartCredentials().id }, config);
+            }
+            catch(err) {
+                if(err?.response?.status === 404) {
+                    clearCartCredentials();
+                }
+
+                throw err;
+            }
         },
 
         addItem: (data, config) => {

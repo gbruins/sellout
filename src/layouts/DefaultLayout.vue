@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import AppFooter from '../components/AppFooter.vue'
 import AppHeader from '../components/AppHeader.vue'
+import CartResetNotice from '../components/CartResetNotice.vue'
 </script>
 
 <template>
     <div class="flex min-h-screen flex-col bg-zinc-950 text-zinc-100">
         <AppHeader />
+        <CartResetNotice />
 
         <main class="w-full flex-1 bg-zinc-950">
             <slot />
