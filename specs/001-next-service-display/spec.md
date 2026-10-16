@@ -16,6 +16,7 @@
 - Q: Is an order accepted if payment completes after the service ends? → A: Yes, if checkout started while the service was open.
 - Q: What does the page show when the current service is sold out? → A: A sold-out message plus the next upcoming service's date and time, if any.
 - Q: Is there a limit on pizzas per order? → A: Yes, a per-order cap the manager can set per service, defaulting to 4.
+- Q (added by owner): How does the page stay in sync with the server's remaining count? → A: The server pushes changes to open pages; reloads and frequent polling are not the design. The push mechanism is chosen in the plan.
 - Q: What happens to a customer's cart when its service ends? → A: The cart is emptied, because the next service may not offer the same items. A checkout already in progress is not affected.
 
 ## User Scenarios & Testing *(mandatory)*
@@ -67,6 +68,8 @@ A visitor leaves the home page open. When the service starts, the page switches 
 1. **Given** the page is showing an upcoming service, **When** the start time passes, **Then** the page shows the open state.
 2. **Given** the page is showing an open service, **When** the end time passes, **Then** the page stops offering ordering and shows the next upcoming service or the empty message.
 3. **Given** the visitor's device clock is wrong, **When** the page decides open or closed, **Then** it uses the shop's time, not the device clock.
+4. **Given** the page is showing an open service, **When** pizzas are held, sold or released by any customer, **Then** the remaining count on the page updates on its own within a few seconds, without the visitor reloading.
+5. **Given** the page has lost its live connection, **When** the connection is restored, **Then** the page shows the current remaining count, not the last count it received.
 
 ---
 
@@ -95,6 +98,8 @@ The store manager, when creating or editing a service in the admin, picks which 
 - Daylight saving time begins or ends between now and the service: the displayed local time stays correct.
 - The pizza count drops to zero during an open service while a visitor is viewing the page.
 - Another customer's open checkout holds the last pizzas: the page shows them as unavailable, and they reappear if that checkout is abandoned.
+- Many visitors have the page open at once: every one of them sees count changes at about the same time.
+- The visitor's device goes to sleep or the browser tab is backgrounded: on return the page shows the current count.
 - A customer returns after a service has ended with items still saved in their cart: the cart is empty and a short notice explains that the previous service has ended.
 
 ## Requirements *(mandatory)*
@@ -119,6 +124,8 @@ The store manager, when creating or editing a service in the admin, picks which 
 - **FR-013**: The header open or closed badge MUST reflect the same state as the page.
 - **FR-014**: The store manager MUST be able to assign a menu to a service in the admin.
 - **FR-015**: The page MUST show a friendly error with a retry when service data cannot be loaded.
+- **FR-017**: While a visitor has the open view showing, the server MUST push changes to the remaining count (and to the open, sold-out and ended state) to the page as they happen. The page MUST NOT depend on the visitor reloading or on frequent repeated requests to stay accurate.
+- **FR-018**: If the live connection drops, the page MUST reconnect automatically, show the current count on reconnect, and indicate to the visitor that the count may be out of date while disconnected.
 - **FR-016**: A cart belongs to the service it was started for. When that service ends, the cart MUST be emptied and the customer told why, so items from one menu never carry into another service. A checkout already in progress MUST NOT be affected.
 
 ### Key Entities
@@ -136,6 +143,7 @@ The store manager, when creating or editing a service in the admin, picks which 
 - **SC-001**: A first-time visitor can tell whether the shop is open and when it next opens within 5 seconds of the page loading.
 - **SC-002**: The page's open or closed state agrees with the scheduled window for 100% of test cases, including across daylight saving changes.
 - **SC-003**: A visitor with an open page sees the state change within 1 minute of a service starting or ending.
+- **SC-008**: When a pizza is held, sold or released, every open page shows the new count within 3 seconds in at least 95% of cases, with 100 pages open at once.
 - **SC-004**: No checkout can be started for a closed service or beyond its pizza inventory in 100% of test cases.
 - **SC-005**: The remaining count shown is never more than one order out of date at load time.
 - **SC-006**: Unpublished menus and products are never visible to visitors in any test.
