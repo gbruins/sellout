@@ -30,6 +30,11 @@ export default (utils) => {
             return utils.$delete('cart/item', { id }, config);
         },
 
+        // Resolves with { data: { url } }; send the browser to that Stripe-hosted page
+        checkout: () => {
+            return utils.$post('cart/checkout', { id: getCartCredentials().id });
+        },
+
         forget: clearCartCredentials,
     }
 }

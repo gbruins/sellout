@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from 'vue';
 import apiPlugin, { axiosInstance } from '@/plugins/api';
-import { getCartCredentials } from '@/utils/cartCredentials';
+import { getCartCredentials, saveCartCredentials } from '@/utils/cartCredentials';
 
 function installApi() {
     const app = createApp({});
@@ -44,5 +44,21 @@ describe('api auth wiring', () => {
 
         const config = await axiosInstance.interceptors.request.handlers[0].fulfilled({ headers: {} });
         expect(config.headers['X-Cart-Token']).toBe('tok-1');
+    });
+
+    it('posts the stored cart id to checkout and returns the Stripe url', async () => {
+        const $api = installApi();
+        saveCartCredentials('cart-1', 'tok-1');
+        let request;
+        axiosInstance.defaults.adapter = async (config) => {
+            request = config;
+            return { data: { data: { url: 'https://checkout.stripe.com/x' } }, status: 200, statusText: 'OK', headers: {}, config };
+        };
+
+        const response = await $api.cart.checkout();
+
+        expect(request.url).toBe('cart/checkout');
+        expect(JSON.parse(request.data)).toEqual({ id: 'cart-1' });
+        expect(response.data.url).toBe('https://checkout.stripe.com/x');
     });
 });
