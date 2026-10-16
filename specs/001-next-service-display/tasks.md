@@ -96,7 +96,7 @@
 - [X] T040 [P] [US2] Add a sold-out view to `store/src/pages/HomeView.vue` and `ServiceClosedCard.vue`: sold-out message plus the next service's date and time when `next_service` exists; ordering disabled
 - [X] T041 [P] [US2] Handle the new 409 codes in `store/src/api/cart.js` and show clear messages (no open service, over limit, sold out, service closed) wherever the cart UI will call them; add tests in `store/src/api/__tests__/api.spec.js`
 - [X] T042 [US2] Show the one-time "your previous service has ended, your cart was emptied" notice when a response carries `cart_reset`, and clear the stored cart credentials if the cart is gone
-- [ ] T043 [US2] Verify quickstart slice 3 step 9 and the sold-out view in the browser
+- [X] T043 [US2] Verify quickstart slice 3 step 9 and the sold-out view in the browser
 
 **Checkpoint**: Stock, caps and cart reset enforced on the server.
 
