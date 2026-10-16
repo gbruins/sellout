@@ -16,7 +16,7 @@ Existing: `id`, `start_at`, `end_at`, `notes`, `inventory_count`, `service_menu_
 | Column | Type | Notes |
 |--------|------|-------|
 | `service_id` | uuid, nullable, FK to `service.id` | New. Set when the first item is added during an open service. Cleared when the cart is reset. |
-| `checkout_expires_at` | timestamptz, nullable | New. Set when a checkout starts (now + 31 minutes). Cleared on cancel. While in the future and the cart is not closed, the cart's quantity is held. |
+| `checkout_expires_at` | timestamptz, nullable | New. Set when a checkout starts, then moved to the Stripe session's `expires_at` plus a 60-second margin once the session exists. Cleared on cancel. While in the future and the cart is not closed, the cart's pizzas are held. Authoritative for counting holds. |
 
 Existing relevant columns: `closed_at`, `stripe_order_id`, `token_hash`.
 
@@ -25,8 +25,8 @@ Index: `carts (service_id)` for the remaining-count query.
 ## Derived values (not stored)
 
 ```text
-paid_qty      = SUM(cart_items.qty) for carts with service_id = S and closed_at IS NOT NULL
-held_qty      = SUM(cart_items.qty) for carts with service_id = S and closed_at IS NULL
+paid_qty      = SUM(cart_items.qty) of PIZZA items (product type slug 'pizza') for carts with service_id = S and closed_at IS NOT NULL
+held_qty      = SUM(cart_items.qty) of PIZZA items for carts with service_id = S and closed_at IS NULL
                 and checkout_expires_at > now()       (excluding the cart being checked out)
 remaining     = GREATEST(0, service.inventory_count - paid_qty - held_qty)
 status        = none | upcoming | open | sold_out
@@ -52,6 +52,6 @@ no live hold and is not closed (FR-016).
 
 ## Validation rules
 
-- `max_per_order` between 1 and `inventory_count` (admin form and server Joi).
-- Cart quantity after adding an item must not exceed `max_per_order` or `remaining`.
+- `max_per_order` is an integer of at least 1 (admin form and server Joi). The effective cap is `min(max_per_order, remaining)`.
+- Pizza quantity in the cart after adding must not exceed the effective cap. Non-pizza items are not limited by it.
 - Checkout must start while `start_at <= now < end_at`.

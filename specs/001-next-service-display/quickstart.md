@@ -37,7 +37,7 @@ curl -s -u store:<key> https://strawberry.local:10000/api/v1/services/next
    reconnect and show the current count.
 4. Let a service end while the page is open. Expect the page to move to the next service or
    the empty message within a minute.
-5. Open 100 simulated streams and confirm 95% see a change within 3 seconds.
+5. Open 100 simulated streams (start the throwaway server with `SERVICE_STREAMS_PER_IP=200`) and confirm 95% see a change within 3 seconds.
 
 ```bash
 curl -N -u store:<key> https://strawberry.local:10000/api/v1/services/next/stream
@@ -45,7 +45,7 @@ curl -N -u store:<key> https://strawberry.local:10000/api/v1/services/next/strea
 
 ## Slice 3: holds, caps and cart reset
 
-1. Inventory 5, cap 4. Add 5 to a cart: expect `409 over_limit`. Add 4: accepted.
+1. Inventory 5, cap 4. Add 5 pizzas to a cart: expect `409 over_limit`. Add 4: accepted. Adding a non-pizza product is never limited and never changes `remaining`.
 2. Start checkout with 4. Expect `remaining` to drop to 1 for everyone.
 3. Cancel checkout. Expect `remaining` back to 5.
 4. Let a started checkout expire. Expect `remaining` to recover without any request from it.

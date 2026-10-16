@@ -29,7 +29,7 @@
 ## R3. How do multiple viewers and multiple server processes stay in sync?
 
 - **Decision**: An in-process hub that holds all open responses and broadcasts one
-  snapshot to each. A 15-second change-detecting tick plus explicit `publish()` calls from
+  snapshot to each. A 3-second change-detecting tick plus explicit `publish()` calls from
   checkout start, cancel and the webhook.
 - **Rationale**: The shop runs one process. The tick removes the need to track every
   event that can change the count (service start or end, hold expiry).
@@ -40,11 +40,14 @@
 
 - **Decision**: Compute from the database:
   `remaining = max(0, inventory_count - paid_qty - held_qty)`, where `paid_qty` is the
-  quantity on closed carts for the service and `held_qty` is the quantity on open carts
-  whose `checkout_expires_at` is in the future.
-- **Rationale**: The 31-minute Stripe session expiry equals the hold length, so the
-  timestamp is enough and the hold needs no polling. Cancel and webhook completion
-  update the same columns.
+  pizza quantity on closed carts for the service and `held_qty` is the pizza quantity on open carts
+  whose `checkout_expires_at` is in the future. Only items whose product type slug is
+  `pizza` count.
+- **Rationale**: The hold ends at the Stripe session's expiry plus a 60-second margin, so a
+  customer can never pay after their hold is released. `checkout_expires_at` is
+  authoritative for counting; the Stripe lookup stays only as the edit lock check and clears
+  the column when it sees an expired session. Cancel and webhook completion update the same
+  columns.
 - **Alternatives considered**: Asking Stripe for each open session (slow, rate limited,
   and the exact source of the existing lazy check); a separate holds table (more moving
   parts for no extra capability).
@@ -52,9 +55,9 @@
 ## R5. How are overselling races prevented?
 
 - **Decision**: In one transaction, lock the service row with `FOR UPDATE`, recompute the
-  remaining count excluding the current cart, check the cap, write
-  `checkout_expires_at`, then commit before creating the Stripe session. If Stripe
-  fails, clear the hold.
+  remaining count excluding the current cart, check the cap, write a provisional
+  `checkout_expires_at`, then commit before creating the Stripe session. Once the session
+  exists, move the hold to its `expires_at` plus 60 seconds. If Stripe fails, clear the hold.
 - **Rationale**: Serialises concurrent checkouts per service without a global lock.
 - **Alternatives considered**: Optimistic retry (harder to reason about) and advisory locks
   (equivalent, less obvious to readers).
@@ -86,5 +89,8 @@
 
 ## R9. Which items count against inventory?
 
-- **Decision**: All cart item quantities.
-- **Rationale**: Every current product is a pizza. Revisit if drinks or sides are added.
+- **Decision**: Only pizzas: cart items whose product's `product_type` matches the product type
+  with slug `pizza`. Drinks, sides and other future types are never counted, capped or held.
+- **Rationale**: The pizza count is the scarce resource. The `Pizza` type already exists.
+- **Alternatives considered**: Counting everything (wrong once non-pizza items exist); a per
+  product flag (duplicates the product type).

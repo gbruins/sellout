@@ -129,16 +129,20 @@ the `service` plugin so the feature stays in one place.
    used by both `GET /services/next` (initial load, fallback) and the SSE stream.
 2. **Push by SSE.** The hub keeps the connected responses, sends a `state` event on
    connect, on any change, and a heartbeat comment every 25 seconds. Mutations (hold
-   created, cancelled, webhook paid) call `ServiceStream.publish()`. A 15-second tick
+   created, cancelled, webhook paid) call `ServiceStream.publish()`. A 3-second tick
    rebuilds the snapshot only when listeners exist and publishes if it changed, which
-   also covers service start and end, and hold expiry, with no per-event bookkeeping.
+   also covers service start and end, and hold expiry, within the 3-second goal and with
+   no per-event bookkeeping.
 3. **Holds are rows, not Stripe lookups.** `carts.checkout_expires_at` is set when a
-   checkout starts (now plus 31 minutes) and cleared on cancel. A cart holds its quantity
-   while `checkout_expires_at > now` and it is not closed. Counting holds never calls
-   Stripe.
+   checkout starts and is then set to the Stripe session's expiry plus 60 seconds, so a
+   hold always outlasts the session. It is cleared on cancel. A cart holds its pizzas
+   while `checkout_expires_at > now` and it is not closed. This column is authoritative for
+   counting and never calls Stripe. The existing Stripe lookup remains only for the edit
+   lock and clears the column when it sees an expired session.
 4. **Race safety.** Starting a checkout runs in a transaction that locks the service row
    (`FOR UPDATE`), recomputes remaining excluding this cart, checks the cap, and writes
-   the hold before the Stripe session is created. If Stripe fails, the hold is cleared.
+   a provisional hold before the Stripe session is created, then extends it to the session
+   expiry. If Stripe fails, the hold is cleared.
 5. **Cart belongs to a service.** The server attaches `carts.service_id` when the first
    item is added, using the currently open service (the client never sends it). Adding
    when no service is open returns 409. On any cart read or write, a cart whose service
@@ -146,8 +150,10 @@ the `service` plugin so the feature stays in one place.
 6. **Time.** The payload includes `server_now`. The store keeps
    `offset = server_now - Date.now()` and schedules local timers with it, as a fallback
    if the stream is down.
-7. **Items counted.** Every cart item quantity counts against inventory (all menu items
-   are treated as pizzas). Revisit if non-pizza items are added.
+7. **Only pizzas count.** Inventory, holds, the cap and sold-out use only cart items whose
+   product type slug is `pizza`. Other items are ignored by all of these.
+8. **Display-only local timer.** The storefront's fallback timer only changes what is shown.
+   Ordering is always decided by the server.
 
 ## Delivery Slices
 
@@ -160,12 +166,13 @@ the `service` plugin so the feature stays in one place.
 
 ## Risks and Open Items
 
-- **No admin screen to create menus or add products to a menu.** The spec puts this out of
-  scope, so the manager cannot set up a menu without a developer or SQL. Recommend a
-  follow-up spec (`002-menu-management`).
+- **No admin screen to create menus or add products to a menu.** Out of scope here, so the
+  manager needs SQL until follow-up spec `002-menu-management` is done. SC-007 is worded
+  accordingly. The cart and checkout screens are follow-up spec `003-cart-checkout-ui`.
 - Gzip or a proxy can buffer SSE. Slice 2 must test with the real hosting setup and set
   no-buffering headers.
-- Per-viewer connection cost. Cap connections per caller and per process.
+- Per-viewer connection cost. Cap connections per caller IP (configurable, default 50) and
+  per process. Behind a proxy, `trustProxy` must be set or all viewers share one IP.
 - Hosting is unknown. If more than one server instance runs, replace the in-process hub
   with Postgres LISTEN/NOTIFY.
 - Price drift and double-payment refunds remain on the TODO list and are not in this

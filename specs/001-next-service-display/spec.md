@@ -111,11 +111,11 @@ The store manager, when creating or editing a service in the admin, picks which 
 - **FR-003**: The home page MUST show an open view when the next service is currently running and a closed view when it is upcoming.
 - **FR-004**: The closed view MUST show the upcoming service's start and end time, and its notes when present.
 - **FR-005**: The open view MUST show the pizzas remaining and the published products of the service's menu.
-- **FR-006**: Pizzas remaining MUST equal the service's total inventory minus the quantity on paid orders and on open checkouts for that service, and MUST NOT go below zero.
+- **FR-006**: Pizzas remaining MUST equal the service's total pizza inventory minus the pizzas on paid carts and on open checkouts for that service, and MUST NOT go below zero. Only pizzas count: other items (for example drinks or sides added in future) never count toward inventory, the per-order cap or sold-out.
 - **FR-006a**: Pizzas in an open checkout MUST be released back to the remaining count when the checkout is cancelled or expires, and MUST become sold when it is paid.
 - **FR-006b**: Starting a checkout MUST fail with a clear message if the cart's quantity exceeds the pizzas remaining at that moment.
-- **FR-006c**: Each service MUST have a per-order pizza cap, set by the manager when scheduling the service and defaulting to 4. Adding to a cart or starting checkout beyond the cap MUST be refused with a clear message.
-- **FR-007**: The system MUST show a sold-out state and prevent ordering when no pizzas remain, and MUST also show the next upcoming service's date and time when one exists.
+- **FR-006c**: Each service MUST have a per-order pizza cap, set by the manager when scheduling the service and defaulting to 4 (minimum 1). The effective cap is the lower of the cap and the pizzas remaining. Adding pizzas to a cart or starting checkout beyond it MUST be refused with a clear message.
+- **FR-007**: The system MUST show a sold-out state and prevent ordering when no pizzas remain (the server refuses new pizzas and checkout, and the page does not offer an order action), and MUST also show the next upcoming service's date and time when one exists.
 - **FR-008**: The system MUST refuse to start a checkout for a service that is not currently open or has no pizzas remaining, even if the page is stale. A checkout started while the service was open MUST still be accepted if payment completes after the service ends.
 - **FR-009**: The system MUST show an empty state when there is no current or future service.
 - **FR-010**: All times MUST be stored in UTC and displayed in the America/Los_Angeles time zone, in both the storefront and the admin.
@@ -132,8 +132,8 @@ The store manager, when creating or editing a service in the admin, picks which 
 
 - **Service**: A scheduled opening window with a start time, end time, optional notes, a total pizza inventory, a per-order pizza cap, and one menu.
 - **Service Menu**: A named, publishable list of products offered during a service.
-- **Product**: A pizza or other item that can be on one or more menus and sold.
-- **Order**: A paid purchase, linked to the service it was bought for, whose quantities count against the service's inventory.
+- **Product**: An item that can be on one or more menus and sold. Each product has a product type; only products of type Pizza count toward inventory.
+- **Paid cart**: A cart that has been paid (closed), linked to the service it was bought for, whose pizzas count against the service's inventory. (Formerly referred to as "Order".)
 - **Cart**: A customer's in-progress selection of products, belonging to one service and emptied when that service ends.
 
 ## Success Criteria *(mandatory)*
@@ -146,7 +146,7 @@ The store manager, when creating or editing a service in the admin, picks which 
 - **SC-004**: No checkout can be started for a closed service or beyond its pizza inventory in 100% of test cases.
 - **SC-005**: The remaining count shown is never more than one order out of date at load time.
 - **SC-006**: Unpublished menus and products are never visible to visitors in any test.
-- **SC-007**: The manager can schedule a service with a menu and see it appear on the storefront without developer help.
+- **SC-007**: The manager can assign an existing menu to a service and see it appear on the storefront without developer help. (Creating menus and adding products to them is covered by a separate spec, `002-menu-management`.)
 - **SC-008**: When a pizza is held, sold or released, every open page shows the new count within 3 seconds in at least 95% of cases, with 100 pages open at once.
 
 ## Assumptions
@@ -154,7 +154,8 @@ The store manager, when creating or editing a service in the admin, picks which 
 - The shop operates in a single time zone, America/Los_Angeles, as set by the project constitution.
 - Only one service is active at a time in normal operation. Overlaps are tolerated but not designed for.
 - Orders are for pickup during the service; delivery is out of scope.
-- Services and menus are created by the manager through the admin; menu and product management screens beyond choosing a menu for a service are out of scope for this feature.
-- The pizza count shown is a live count of what remains, after paid orders and pizzas held by open checkouts.
+- Services are created by the manager through the admin, including choosing a menu. Creating menus and adding products to them has no admin screen yet and is out of scope here; a follow-up spec (`002-menu-management`) covers it, and until then menus are set up directly in the data.
+- The add-to-cart and checkout screens are a separate follow-up spec (`003-cart-checkout-ui`). This feature makes the server enforce stock and caps, and the page shows the menu and a hand-off point for ordering, but does not build the cart screens.
+- The pizza count shown is a live count of what remains, after paid carts and pizzas held by open checkouts.
 - Existing sample inventory numbers on the home page are replaced by real service data.
-- Work spans the server, the admin and the storefront. The first slice to build is the server lookup plus the storefront display (User Stories 1 and 2). Linking orders to services and enforcing stock (FR-006 to FR-008) follows, then the admin menu picker.
+- Work spans the server, the admin and the storefront. The first slice to build is the server lookup plus the storefront display (User Stories 1 and 2). Linking carts to services and enforcing stock (FR-006 to FR-008) follows, then the admin menu picker.

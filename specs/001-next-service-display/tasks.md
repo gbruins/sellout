@@ -23,8 +23,8 @@
 - [ ] T003 Create migration `server/server/db/migrations/80_service_holds.js` adding `service.max_per_order` (integer, not null, default 4, minimum 1), `carts.service_id` (uuid, nullable, FK to `service.id`), `carts.checkout_expires_at` (timestamptz, nullable) and an index on `carts (service_id)`; include a working `down`
 - [ ] T004 Run the migration on the dev database and confirm the columns exist
 - [ ] T005 [P] Add `max_per_order: Joi.number().integer().min(1)` to the schema in `server/server/plugins/service/ServiceModel.js`
-- [ ] T006 [P] Add `service_id` (uuid, allow null) and `checkout_expires_at` (date, allow null) to `server/server/plugins/cart/CartModel.js`, and make sure store callers cannot write them (extend the restricted-fields list in `server/server/plugins/cart/cartAccess.js`)
-- [ ] T007 Create `server/server/plugins/service/ServiceState.js` exporting `buildState(now = new Date())` that returns the contract object: pick the service with `end_at > now` and the earliest `start_at`; status `open`, `sold_out`, `upcoming` or `none`; `server_now`; published menu with published products only; `next_service` when sold out. In this slice `remaining` is `max(0, inventory_count - paid_qty)` where `paid_qty` is the quantity on closed carts with that `service_id`
+- [ ] T006 [P] Add `service_id` (uuid, allow null) and `checkout_expires_at` (date, allow null) to `server/server/plugins/cart/CartModel.js`, and verify store callers still cannot write them (the billing-only restriction in `server/server/plugins/cart/cartAccess.js` already blocks other fields; add a curl check)
+- [ ] T007 Create `server/server/plugins/service/ServiceState.js` exporting `buildState(now = new Date())` that returns the contract object: pick the service with `end_at > now` and the earliest `start_at`; status `open`, `sold_out`, `upcoming` or `none`; `server_now`; published menu with published products only; `next_service` when sold out. In this slice `remaining` is `max(0, inventory_count - paid_qty)` where `paid_qty` is the quantity of pizza items (product type slug `pizza`) on closed carts with that `service_id`
 - [ ] T008 Create `store/src/utils/shopTime.ts` exporting formatters (date, time, range) that use `Intl.DateTimeFormat` with `timeZone: 'America/Los_Angeles'` and label the zone
 - [ ] T009 [P] Add `store/src/utils/__tests__/shopTime.spec.ts` covering a UTC instant on both sides of the daylight saving change and a visitor zone different from Los Angeles
 - [ ] T010 Create `store/src/api/service.js` with `getNext()` calling `GET /services/next`, and register it in `store/src/plugins/api.js` next to `auth` and `cart`
@@ -39,7 +39,7 @@
 **Independent Test**: Quickstart slice 1 rows "No services", "Upcoming", "Earliest wins", "Time zone", "Error".
 
 - [ ] T012 [US1] Add `GET /services/next` to `server/server/plugins/service/index.js` with `auth: { strategies: ['apiKey', 'adminCookie'] }`, a `nextHandler` in `server/server/plugins/service/ServiceController.js` calling `buildState`, and no rate-limit change. Declare it before `/service` routes so it is not shadowed
-- [ ] T013 [US1] Verify with curl against a throwaway server: statuses `none`, `upcoming` and earliest-wins, a 401 without the key, and that `server_now` is present. Delete the temporary rows afterwards
+- [ ] T013 [US1] Verify with curl against a throwaway server: statuses `none`, `upcoming` and earliest-wins, a 401 without the key, and that `server_now` is present. Delete the temporary rows afterwards. Also check exact start and end boundaries and a service ending as the next begins (see T053)
 - [ ] T014 [P] [US1] Create `store/src/components/ServiceClosedCard.vue` showing start and end (using `shopTime`), notes when present, and the empty message "No service scheduled" when status is `none`; style to match the dark zinc and orange theme
 - [ ] T015 [P] [US1] Create `store/src/components/ServiceStatusNotice.vue` for the loading, error and "may be out of date" notices, with a retry button wired to `retry()`
 - [ ] T016 [US1] Update `store/src/pages/HomeView.vue` to call `load()` on mount and render by status: closed card for `upcoming` and `none`, notice for loading and error
@@ -58,7 +58,7 @@
 
 - [ ] T021 [US2] Verify with curl the `open` status: menu with only published products, `menu: null` when none is assigned, and `remaining` equal to `inventory_count` minus paid quantity (no holds yet)
 - [ ] T022 [P] [US2] Update `store/src/components/PizzaRemainingCountdown.vue` and `PizzaInventoryMatrix.vue` to take real `remaining` and total from the store (remove the hardcoded 30 and 60 in `HomeView.vue`)
-- [ ] T023 [US2] Update `store/src/components/PizzaList.vue` to render `menu.products` with price formatting (new `store/src/utils/format.js`, cents to dollars), keeping the `order` emit; show "menu not available yet" when `menu` is null; update `store/src/components/__tests__/PizzaList.spec.ts`
+- [ ] T023 [US2] Update `store/src/components/PizzaList.vue` to render `menu.products` with price formatting (new `store/src/utils/format.js`, cents to dollars), keeping the `order` emit as the hand-off point for the future cart UI (spec `003-cart-checkout-ui`); show "menu not available yet" when `menu` is null; update `store/src/components/__tests__/PizzaList.spec.ts`
 - [ ] T024 [US2] Update `HomeView.vue` to render the open view for `open` status and add specs for it in `store/src/pages/__tests__/HomeView.spec.ts`
 - [ ] T025 [US2] Verify end to end in the browser against the dev server using quickstart slice 1
 
@@ -70,14 +70,14 @@
 
 **Independent Test**: Quickstart slice 2.
 
-- [ ] T026 [US3] Create `server/server/plugins/service/ServiceStream.js`: a hub holding connected responses, `subscribe(request)` returning a `PassThrough`, `publish()` that rebuilds the state and sends a `state` event with an increasing `id` only if it changed, a 25-second `: ping` heartbeat, a 15-second change-detecting tick that runs only while listeners exist, and a cap of 5 streams per caller IP returning 429
+- [ ] T026 [US3] Create `server/server/plugins/service/ServiceStream.js`: a hub holding connected responses, `subscribe(request)` returning a `PassThrough`, `publish()` that rebuilds the state and sends a `state` event with an increasing `id` only if it changed, a 25-second `: ping` heartbeat, a 3-second change-detecting tick that runs only while listeners exist, and a cap of `SERVICE_STREAMS_PER_IP` (default 50) concurrent streams per caller IP returning 429
 - [ ] T027 [US3] Add `GET /services/next/stream` to `server/server/plugins/service/index.js` and `streamHandler` to `ServiceController.js`: same auth, headers `Content-Type: text/event-stream`, `Cache-Control: no-cache`, `X-Accel-Buffering: no`, gzip and the socket timeout disabled for the route, first event is a full `state`, cleanup on disconnect
 - [ ] T028 [US3] Call `ServiceStream.publish()` after a checkout is started, cancelled, or completed in `server/server/plugins/cart/CheckoutService.js` and the webhook handler in `server/server/plugins/stripe/StripeController.js`
 - [ ] T029 [US3] Verify the stream with `curl -N`: initial `state`, change on a database edit within the tick, heartbeat, sixth connection gets 429, and no leaked listeners after disconnect
 - [ ] T030 [P] [US3] Create `store/src/utils/serviceStream.ts` wrapping `@microsoft/fetch-event-source` with the Basic-auth header, a `state` handler, automatic retry with backoff, pause while the tab is hidden, and callbacks for connected and disconnected
-- [ ] T031 [US3] Wire the stream into `store/src/stores/service.ts`: `connect()` and `disconnect()`, apply pushed state, set a `stale` flag while disconnected and clear it on the first state after reconnect, a local timer using the clock offset as a fallback for start and end boundaries; start and stop it from `HomeView.vue` mount and unmount
+- [ ] T031 [US3] Wire the stream into `store/src/stores/service.ts`: `connect()` and `disconnect()`, apply pushed state, set a `stale` flag while disconnected and clear it on the first state after reconnect, a local timer using the clock offset as a fallback for start and end boundaries (display only: it never enables ordering, which the server decides); start and stop it from `HomeView.vue` mount and unmount
 - [ ] T032 [P] [US3] Extend `store/src/stores/__tests__/service.spec.ts` with a fake stream and fake timers: pushed update, disconnect marks stale, reconnect shows the current count, boundary flip from `upcoming` to `open` and `open` to the next service
-- [ ] T033 [US3] Verify quickstart slice 2 steps 1 to 5, including the load check with 100 simulated streams against SC-008, and test behind the real hosting or proxy once known
+- [ ] T033 [US3] Verify quickstart slice 2 steps 1 to 5, including the load check with 100 simulated streams against SC-008 (raise `SERVICE_STREAMS_PER_IP` for the test), and test behind the real hosting or proxy once known, with `trustProxy` set
 
 **Checkpoint**: Live updates work.
 
@@ -87,10 +87,10 @@
 
 **Independent Test**: Quickstart slice 3.
 
-- [ ] T034 [US2] Extend `buildState` in `server/server/plugins/service/ServiceState.js` so `remaining = max(0, inventory_count - paid_qty - held_qty)` where `held_qty` counts quantity on carts with `closed_at IS NULL` and `checkout_expires_at > now()`; add the sold-out status and `next_service`
-- [ ] T035 [US2] In `server/server/plugins/cart/CartItemService.js`, on the first add attach `carts.service_id` from the currently open service; return `409 { code: "no_open_service" }` when none is open and `409 { code: "over_limit", max_per_order, remaining }` when the cart total would exceed `max_per_order` or the remaining count. The client never sends `service_id`
-- [ ] T036 [US2] In `server/server/plugins/cart/CheckoutService.js`, run checkout start in one transaction: lock the service row `FOR UPDATE`, recompute remaining excluding this cart, check `start_at <= now < end_at` (`409 service_closed`), the cap and stock (`409 sold_out` or `over_limit`), write `checkout_expires_at = now + 31 minutes`, commit, then create the Stripe session; clear the hold if Stripe fails
-- [ ] T037 [US2] Clear `checkout_expires_at` in `cancelCheckout` and when an expired session is released, and make `completeCartFromSession` accept payment after `end_at` when the checkout started in the window (FR-008)
+- [ ] T034 [US2] Extend `buildState` in `server/server/plugins/service/ServiceState.js` so `remaining = max(0, inventory_count - paid_qty - held_qty)` where `paid_qty` and `held_qty` count only pizza items (product type slug `pizza`), and `held_qty` counts carts with `closed_at IS NULL` and `checkout_expires_at > now()`; add the sold-out status and `next_service`
+- [ ] T035 [US2] In `server/server/plugins/cart/CartItemService.js`, on the first add attach `carts.service_id` from the currently open service; return `409 { code: "no_open_service" }` when none is open and `409 { code: "over_limit", max_per_order, remaining }` when the cart's pizza total would exceed `min(max_per_order, remaining)`. Non-pizza items are never limited or counted. The client never sends `service_id`
+- [ ] T036 [US2] In `server/server/plugins/cart/CheckoutService.js`, run checkout start in one transaction: lock the service row `FOR UPDATE`, recompute remaining excluding this cart, check `start_at <= now < end_at` (`409 service_closed`), the cap and stock (`409 sold_out` or `over_limit`), write a provisional `checkout_expires_at = now + 31 minutes`, commit, create the Stripe session, then set `checkout_expires_at` to the session's `expires_at` plus 60 seconds so the hold always outlasts the session; clear the hold if Stripe fails
+- [ ] T037 [US2] Clear `checkout_expires_at` in `cancelCheckout` and when the existing lazy Stripe check sees an expired session (`checkout_expires_at` stays authoritative for counting), and make `completeCartFromSession` accept payment after `end_at` when the checkout started in the window (FR-008)
 - [ ] T038 [US2] Reconcile ended-service carts in `server/server/plugins/cart/CartService.js`: on any cart read or write, if `service.end_at <= now`, the cart has no live hold and is not closed, delete its items, clear `service_id`, and return `cart_reset: "service_ended"` once; surface it through `server/server/plugins/cart/cartAccess.js` and `CartController.js`
 - [ ] T039 [US2] Verify quickstart slice 3 steps 1 to 8 by curl, including the concurrent last-pizza race (exactly one checkout succeeds) and hold expiry recovering without a request
 - [ ] T040 [P] [US2] Add a sold-out view to `store/src/pages/HomeView.vue` and `ServiceClosedCard.vue`: sold-out message plus the next service's date and time when `next_service` exists; ordering disabled
@@ -106,7 +106,7 @@
 
 **Independent Test**: Quickstart slice 4.
 
-- [ ] T044 [US4] Allow `service_menu_id` and `max_per_order` on `POST /service` and `PUT /service` in `server/server/plugins/service/ServiceController.js` (admin only), validating `max_per_order` between 1 and `inventory_count`
+- [ ] T044 [US4] Allow `service_menu_id` and `max_per_order` on `POST /service` and `PUT /service` in `server/server/plugins/service/ServiceController.js` (admin only), validating `max_per_order` is an integer of at least 1
 - [ ] T045 [P] [US4] Add a menu select (loading `service_menu.search`, published menus) and a "Max per order" number field (minimum 1, default 4) to `admin/src/components/services/ServiceUpsertModal.vue`, with validation and locale strings in `admin/src/locales/en-US.js`
 - [ ] T046 [P] [US4] Show the menu title and per-order cap in `admin/src/pages/ServicesPage.vue`
 - [ ] T047 [US4] Audit `admin/src/composables/useDate.js` and `admin/src/components/figleaf/format8601/Format8601.vue`; make service start and end display and edit in America/Los_Angeles, converting to and from UTC on save, and fix any use of the browser zone
@@ -115,8 +115,9 @@
 ## Phase 8: Polish and cross-cutting
 
 - [ ] T049 [P] Run `npx vitest run`, `npx vue-tsc --noEmit -p tsconfig.app.json` and eslint on the new storefront files; fix problems in new code only
-- [ ] T050 [P] Update `server/README.md` with the new routes, the stream behavior and any proxy buffering notes
-- [ ] T051 [P] Create `store/TODO.md` with the deferred items: order confirmation emails, cart price snapshot drift, double-payment refund path, Stripe Tax, `trustProxy`, and a `002-menu-management` spec for menu and product screens
+- [ ] T050 [P] Update `server/README.md` with the new routes, the stream behavior, `SERVICE_STREAMS_PER_IP`, `trustProxy` and any proxy buffering notes
+- [ ] T051 [P] Create `store/TODO.md` with the deferred items: order confirmation emails, cart price snapshot drift, double-payment refund path, Stripe Tax, `trustProxy`, and the follow-up specs `002-menu-management` (menu and product screens) and `003-cart-checkout-ui` (cart and checkout screens)
+- [ ] T053 [P] Add a server check script (curl plus SQL, throwaway server) for `buildState` boundaries: exactly at `start_at`, exactly at `end_at`, a service ending as the next begins, a daylight saving change date, and the count at load being current after a hold, cancel and expiry (SC-002, SC-005)
 - [ ] T052 Run the full quickstart once, clean up temporary rows, and run `/speckit-analyze` then `/speckit-converge` to confirm nothing is missing
 
 ## Dependencies and Order
