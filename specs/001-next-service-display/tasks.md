@@ -106,10 +106,10 @@
 
 **Independent Test**: Quickstart slice 4.
 
-- [ ] T044 [US4] Allow `service_menu_id` and `max_per_order` on `POST /service` and `PUT /service` in `server/server/plugins/service/ServiceController.js` (admin only), validating `max_per_order` is an integer of at least 1
-- [ ] T045 [P] [US4] Add a menu select (loading `service_menu.search`, published menus) and a "Max per order" number field (minimum 1, default 4) to `admin/src/components/services/ServiceUpsertModal.vue`, with validation and locale strings in `admin/src/locales/en-US.js`
-- [ ] T046 [P] [US4] Show the menu title and per-order cap in `admin/src/pages/ServicesPage.vue`
-- [ ] T047 [US4] Audit `admin/src/composables/useDate.js` and `admin/src/components/figleaf/format8601/Format8601.vue`; make service start and end display and edit in America/Los_Angeles, converting to and from UTC on save, and fix any use of the browser zone
+- [X] T044 [US4] Allow `service_menu_id` and `max_per_order` on `POST /service` and `PUT /service` in `server/server/plugins/service/ServiceController.js` (admin only), validating `max_per_order` is an integer of at least 1
+- [X] T045 [P] [US4] Add a menu select (loading `service_menu.search`, published menus) and a "Max per order" number field (minimum 1, default 4) to `admin/src/components/services/ServiceUpsertModal.vue`, with validation and locale strings in `admin/src/locales/en-US.js`
+- [X] T046 [P] [US4] Show the menu title and per-order cap in `admin/src/pages/ServicesPage.vue`
+- [X] T047 [US4] Audit `admin/src/composables/useDate.js` and `admin/src/components/figleaf/format8601/Format8601.vue`; make service start and end display and edit in America/Los_Angeles, converting to and from UTC on save, and fix any use of the browser zone
 - [ ] T048 [US4] Verify quickstart slice 4 in the browser; note the admin has uncommitted changes of the owner's, so stage only these files when committing
 
 ## Phase 8: Polish and cross-cutting
