@@ -32,4 +32,10 @@ export default defineConfigWithVueTs(
   },
 
   ...pluginOxlint.buildFromOxlintConfigFile('.oxlintrc.json'),
+  {
+    rules: {
+      indent: ['error', 4, { SwitchCase: 1 }],
+      'vue/html-indent': ['error', 4],
+    },
+  },
 )
