@@ -31,6 +31,8 @@ export const useCartStore = defineStore('cart', () => {
     const busy = ref<CartBusy>(null)
     const error = ref<string | null>(null)
     const unavailableProductId = ref<string | null>(null)
+    // True when the last failure was a network or server error, so trying again may work
+    const retryable = ref(false)
 
     const count = computed(() => cart.value?.num_items ?? 0)
     const locked = computed(() => !!cart.value?.checkout_in_progress)
@@ -55,6 +57,7 @@ export const useCartStore = defineStore('cart', () => {
 
         busy.value = kind
         error.value = null
+        retryable.value = false
         unavailableProductId.value = null
 
         try {
@@ -66,6 +69,8 @@ export const useCartStore = defineStore('cart', () => {
         }
         catch(err) {
             error.value = cartErrorMessage(err)
+            const status = (err as { response?: { status?: number } })?.response?.status
+            retryable.value = !status || status >= 500
             const detail = (err as { response?: { data?: { data?: { code?: string, product_id?: string } } } })?.response?.data?.data
             if(detail?.code === 'item_unavailable') {
                 unavailableProductId.value = detail.product_id ?? null
@@ -90,9 +95,14 @@ export const useCartStore = defineStore('cart', () => {
             await refresh()
         }
         catch(err) {
-            cart.value = null
-            if((err as { response?: { status?: number } })?.response?.status !== 404) {
+            const status = (err as { response?: { status?: number } })?.response?.status
+            if(status === 404) {
+                cart.value = null
+            }
+            else {
+                // Keep the cart as it was; the visitor can retry
                 error.value = cartErrorMessage(err)
+                retryable.value = !status || status >= 500
             }
         }
     }
@@ -138,11 +148,18 @@ export const useCartStore = defineStore('cart', () => {
         return run('cancel', () => api!.cart.cancelCheckout())
     }
 
-    function reset() {
-        cart.value = null
+    function clearError() {
         error.value = null
+        retryable.value = false
         unavailableProductId.value = null
     }
 
-    return { cart, busy, error, unavailableProductId, count, locked, load, addPizza, setQty, remove, saveNote, pay, cancelPayment, reset }
+    function reset() {
+        cart.value = null
+        error.value = null
+        retryable.value = false
+        unavailableProductId.value = null
+    }
+
+    return { cart, busy, error, retryable, unavailableProductId, count, locked, load, addPizza, setQty, remove, saveNote, pay, cancelPayment, clearError, reset }
 })

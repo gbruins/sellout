@@ -46,7 +46,7 @@ description: "Task list for Cart and Checkout Screens"
 - [X] T016 [US1] Create `STORE/src/pages/CartView.vue`: loads the cart; empty state with a link to the menu; lines; order total; a pickup-only line and no address fields (FR-018); a Pay button that calls `cart.pay()` and sends the browser to the returned Stripe URL; Pay and Order now disabled while busy, with a visible in-progress label (FR-007, FR-017); layout that works at 360 px (FR-016, SC-007)
 - [X] T017 [US1] Make `STORE/src/pages/OrderCompleteView.vue` also call `cart.reset()` after `$api.cart.forget()` so the indicator shows 0 (FR-009)
 - [X] T018 [US1] Vitest: `STORE/src/stores/__tests__/cart.spec.ts` (add creates then adds; repeat taps while busy make one call; state follows the server response) and `STORE/src/pages/__tests__/CartView.spec.ts` (lines, total, empty state, Pay redirects, no address fields)
-- [ ] T019 [US1] Browser check (quickstart steps 3, 4, 9) with a Stripe test card; run any Stripe-dependent checks from T012 here if the script skipped them
+- [X] T019 [US1] Browser check (quickstart steps 3, 4, 9) with a Stripe test card; run any Stripe-dependent checks from T012 here if the script skipped them
 
 **Checkpoint**: MVP. A visitor can buy pizza.
 
@@ -55,13 +55,13 @@ description: "Task list for Cart and Checkout Screens"
 **Goal**: Closed, sold out, limit, unavailable pizza, cancelled payment, reset and errors all give plain messages and never leave the visitor stuck.
 **Independent test**: Quickstart steps 6, 7 and 8.
 
-- [ ] T020 [US3] Locked state in `STORE/src/pages/CartView.vue`: when `cart.locked`, show "Payment in progress", disable edits, and show Continue to payment (calls `cart.pay()`, which returns the same URL) and Cancel payment (calls `cart.cancelPayment()`, then reloads the cart) (FR-008)
-- [ ] T021 [US3] Cancel return: when the route has `?checkout=cancelled`, show "Payment cancelled" once, call `cart.load()`, and remove the query parameter (FR-010)
-- [ ] T022 [US3] Unavailable pizza: on `item_unavailable` highlight that line in `STORE/src/components/CartLine.vue`, show the named message, keep Pay available for retry after the line is removed (FR-011)
-- [ ] T023 [US3] Closed, upcoming and sold-out: use `STORE/src/stores/service.ts` status to disable Order now and Pay and show the reason (reuse `cartErrors` wording) (FR-014); show a retryable message with a Retry button for network and server errors and keep the cart as it was (FR-012)
-- [ ] T024 [US3] Reset notice: when a cart response has `cart_reset`, call the existing `STORE/src/stores/cartNotice.ts` `showReset()`, and render `STORE/src/components/CartResetNotice.vue` on the cart page as well as the menu (FR-015)
-- [ ] T025 [US3] Vitest additions in `cart.spec.ts` and `CartView.spec.ts` for locked state, cancel return, `item_unavailable` highlight, closed and sold-out disabling, and reset notice
-- [ ] T026 [US3] Browser check (quickstart steps 6, 7, 8); confirm `cart.checkout` never sends the browser to Stripe when refused
+- [X] T020 [US3] Locked state in `STORE/src/pages/CartView.vue`: when `cart.locked`, show "Payment in progress", disable edits, and show Continue to payment (calls `cart.pay()`, which returns the same URL) and Cancel payment (calls `cart.cancelPayment()`, then reloads the cart) (FR-008)
+- [X] T021 [US3] Cancel return: when the route has `?checkout=cancelled`, show "Payment cancelled" once, call `cart.load()`, and remove the query parameter (FR-010)
+- [X] T022 [US3] Unavailable pizza: on `item_unavailable` highlight that line in `STORE/src/components/CartLine.vue`, show the named message, keep Pay available for retry after the line is removed (FR-011)
+- [X] T023 [US3] Closed, upcoming and sold-out: use `STORE/src/stores/service.ts` status to disable Order now and Pay and show the reason (reuse `cartErrors` wording) (FR-014); show a retryable message with a Retry button for network and server errors and keep the cart as it was (FR-012)
+- [X] T024 [US3] Reset notice: when a cart response has `cart_reset`, call the existing `STORE/src/stores/cartNotice.ts` `showReset()`, and render `STORE/src/components/CartResetNotice.vue` on the cart page as well as the menu (FR-015)
+- [X] T025 [US3] Vitest additions in `cart.spec.ts` and `CartView.spec.ts` for locked state, cancel return, `item_unavailable` highlight, closed and sold-out disabling, and reset notice
+- [X] T026 [US3] Browser check (quickstart steps 6, 7, 8); confirm `cart.checkout` never sends the browser to Stripe when refused
 
 **Checkpoint**: Every refusal reads clearly; no stuck states.
 
