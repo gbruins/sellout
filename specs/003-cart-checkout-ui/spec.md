@@ -8,6 +8,15 @@
 
 **Input**: User description: "As a customer, I want to add pizzas from the menu to a cart, review and change my order, and pay by card, so I can buy pizza during a service. Today the menu shows an Order now button that does nothing, and the cart and payment work only exists on the server."
 
+## Clarifications
+
+### Session 2026-10-17
+
+- Q: Should the cart be its own page or a slide-out panel? → A: Its own page at `/cart`; the menu shows a cart indicator that links to it.
+- Q: Can quantities be changed and pizzas removed on the cart page? → A: Yes, plus and minus buttons and a remove button on the cart page.
+- Q: Is the kitchen note in this version? → A: Yes. It is a customer note, separate from the admin's note on a cart, so it needs a new server field and must be shown to the manager in the admin cart view.
+- Q: What does the customer see when they return to a cart whose payment is still open? → A: A locked cart with a "Payment in progress" message and two buttons: Continue to payment and Cancel payment (which unlocks the cart for editing).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Add pizzas and pay (Priority: P1)
@@ -22,7 +31,7 @@ A visitor sees the open menu, taps Order now on a pizza, and it goes into their 
 
 1. **Given** an open service and an empty cart, **When** the visitor taps Order now on a pizza, **Then** the cart holds one of that pizza and a cart indicator shows the count.
 2. **Given** a cart with pizzas, **When** the visitor opens the cart, **Then** each pizza is listed with its title, price, quantity and line total, and the order total is shown.
-3. **Given** a cart with pizzas, **When** the visitor presses Pay, **Then** they are sent to the card payment page for exactly that order.
+3. **Given** a cart with pizzas, **When** the visitor presses Pay on the cart page, **Then** they are sent to the card payment page for exactly that order.
 4. **Given** a successful payment, **When** the visitor returns to the shop, **Then** they see the thank-you page, and the cart is empty.
 5. **Given** a visitor who has never ordered before, **When** they add their first pizza, **Then** no sign-in or account is needed.
 
@@ -30,7 +39,7 @@ A visitor sees the open menu, taps Order now on a pizza, and it goes into their 
 
 ### User Story 2 - Change the order before paying (Priority: P2)
 
-In the cart the visitor can raise or lower the quantity of a pizza, remove it, and add a note for the kitchen. They can keep browsing the menu and come back to the cart without losing anything, even after closing the browser.
+In the cart page the visitor can raise or lower the quantity of a pizza with plus and minus buttons, remove it, and add a note for the kitchen that the manager sees in the admin. They can keep browsing the menu and come back to the cart without losing anything, even after closing the browser.
 
 **Why this priority**: Customers make mistakes and change their minds. Without this they would have to abandon the cart.
 
@@ -41,7 +50,8 @@ In the cart the visitor can raise or lower the quantity of a pizza, remove it, a
 1. **Given** a pizza in the cart, **When** the visitor changes its quantity, **Then** the line total and order total update.
 2. **Given** a pizza in the cart, **When** the visitor removes it, **Then** it disappears and the totals update. If it was the last pizza the cart shows as empty with a link back to the menu.
 3. **Given** a cart, **When** the visitor closes the browser and returns later the same day, **Then** the cart is still there.
-4. **Given** the visitor is at the per-order limit or the remaining count, **When** they try to add or raise a quantity beyond it, **Then** they are told the most they can order and the cart is unchanged.
+4. **Given** a payment is in progress, **When** the visitor opens the cart, **Then** it is locked and offers Continue to payment and Cancel payment.
+5. **Given** the visitor is at the per-order limit or the remaining count, **When** they try to add or raise a quantity beyond it, **Then** they are told the most they can order and the cart is unchanged.
 
 ---
 
@@ -80,12 +90,13 @@ The shop can change while the visitor shops: it can sell out, close, or the mana
 
 - **FR-001**: The Order now button on each menu pizza MUST add one of that pizza to the visitor's cart. A cart MUST be created automatically on the first add, with no sign-in.
 - **FR-002**: Adding a pizza that is already in the cart MUST raise its quantity instead of creating a second line.
-- **FR-003**: The storefront MUST show a cart indicator with the total number of pizzas on every page, and it MUST open the cart screen.
+- **FR-003**: The storefront MUST show a cart indicator with the total number of pizzas on every page, and it MUST open the cart page at `/cart`.
 - **FR-004**: The cart screen MUST list each pizza with its title, unit price, quantity and line total, and show the order total as computed by the server.
-- **FR-005**: The visitor MUST be able to change a pizza's quantity, remove a pizza, and add or edit a note for the kitchen, until payment begins.
+- **FR-005**: The visitor MUST be able to change a pizza's quantity, remove a pizza, using plus, minus and remove buttons on the cart page, and add or edit a note for the kitchen (up to 500 characters), until payment begins.
 - **FR-006**: The cart MUST persist across page reloads and browser restarts on the same device, until the order is paid, the cart is reset, or it no longer exists on the server.
 - **FR-007**: The visitor MUST be able to start card payment from the cart. The storefront MUST send them to the payment page the server provides and MUST NOT collect or handle card details itself.
-- **FR-008**: The cart MUST NOT be editable while a payment is in progress. The visitor MUST be told this and offered a way to cancel the payment and edit the cart.
+- **FR-008**: The cart MUST NOT be editable while a payment is in progress. Opening the cart then MUST show it locked with a "Payment in progress" message and two buttons: Continue to payment (back to the same payment page) and Cancel payment (which unlocks the cart for editing).
+- **FR-019**: The customer note MUST be stored with the cart by the server, kept separate from the admin's own cart note, and shown to the manager in the admin cart view. The storefront MUST only read and write the customer note, never the admin note.
 - **FR-009**: After successful payment the visitor MUST see the thank-you page and the stored cart MUST be forgotten so the next order starts empty.
 - **FR-010**: If the visitor cancels on the payment page, they MUST return to the cart with their items intact and a message that payment was cancelled.
 - **FR-011**: If checkout is refused because a pizza is no longer available, the message MUST name the pizza (`"<pizza>" is no longer available`), the visitor MUST NOT be sent to payment, and they MUST be able to remove that pizza and try again.
@@ -121,8 +132,9 @@ The shop can change while the visitor shops: it can sell out, close, or the mana
 - The server's cart, checkout and payment features from specs 001 and 002 are complete and are used unchanged. Where a gap is found (for example a missing response detail), a small server change is in scope.
 - Payment, receipts and customer contact details are handled by Stripe Checkout. The storefront does not ask for a name, email, phone or address in this version.
 - Order confirmation emails, order history, accounts, discount codes and tips are out of scope (see the deferred list).
+- The server and admin changes for the customer note (FR-019) are in scope for this spec.
 - Pickup is the only fulfilment option, per the constitution. Pickup time and place are shown as already provided by the service information.
 - Only one cart exists per device at a time. A visitor who clears their browser data loses access to their cart.
-- The visitor changes the kitchen note only before payment starts.
+- The kitchen note is edited only before payment starts. Its 500-character limit is an assumed default.
 - The existing `Order now` hand-off in the menu, the cart reset notice and the thank-you page are reused and extended.
 - Verification follows the constitution: each story is tested in a real browser against the running server and a Stripe test card.

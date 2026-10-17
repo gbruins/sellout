@@ -32,4 +32,4 @@
 ## Notes
 
 - Stripe is named because card payment through Stripe Checkout is a constitution rule, not a design choice.
-- Open questions suited to `/speckit-clarify`: whether a cart item's quantity is edited in the cart or only through the menu, whether the cart is a page or a slide-out panel, and whether the kitchen note belongs in this version.
+- Clarified 2026-10-17: cart is a page, edited in the cart, includes a customer note, and shows a locked state during payment.
