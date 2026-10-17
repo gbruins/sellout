@@ -72,16 +72,16 @@ description: "Task list for Cart and Checkout Screens"
 
 ### Server
 
-- [ ] T027 Add `PUT /cart/customer_note` to `SRV/server/plugins/cart/index.js` with a handler in `CartController.js`: payload `{ id, customer_note }` (`customer_note` max 500, null or empty clears); auth `adminCookie` and `apiKey`; `pre` `requireCartAccess` with `{ mutates: true }` (so it is refused during checkout); `onPreResponse` `redactCartForStore`; the handler updates only `customer_note`
-- [ ] T028 Extend `SRV/scripts/checkCart.js`: note saves and reads back; 501 characters rejected; note refused while checkout is open; a store caller with another cart's token gets 403 and the other cart's note is unchanged; `admin_order_notes` is absent from store responses
+- [X] T027 Add `PUT /cart/customer_note` to `SRV/server/plugins/cart/index.js` with a handler in `CartController.js`: payload `{ id, customer_note }` (`customer_note` max 500, null or empty clears); auth `adminCookie` and `apiKey`; `pre` `requireCartAccess` with `{ mutates: true }` (so it is refused during checkout); `onPreResponse` `redactCartForStore`; the handler updates only `customer_note`
+- [X] T028 Extend `SRV/scripts/checkCart.js`: note saves and reads back; 501 characters rejected; note refused while checkout is open; a store caller with another cart's token gets 403 and the other cart's note is unchanged; `admin_order_notes` is absent from store responses
 
 ### Storefront
 
-- [ ] T029 [US2] Add plus, minus and remove buttons to `STORE/src/components/CartLine.vue`, calling `cart.setQty` and `cart.remove`; minus at 1 removes after no extra prompt; buttons disabled while busy or locked (FR-005)
-- [ ] T030 [US2] Add the note textarea to `STORE/src/pages/CartView.vue` (shown as plain text everywhere, never as HTML; 500-character counter, saves on blur or a Save button through `cart.saveNote`, clears when empty, read-only when locked) (FR-005, FR-019)
-- [ ] T031 [US2] Limits: on `over_limit` show "You can order up to N pizzas" from the server values and leave the cart unchanged; confirm persistence across reload and browser restart (`cartCredentials.js`) and a 404 gives a fresh empty cart with no error screen (FR-006, edge cases)
-- [ ] T032 [US2] Vitest additions: plus/minus/remove update from the server response; note saves and clears; over-limit message; 404 resets to an empty cart
-- [ ] T033 [P] [US2] Admin: show `customer_note` read-only, as plain text never HTML, above the admin note in `ADM/src/components/cart/CartDetailNotesCard.vue` (add the label string to `ADM/src/locales/en-US.js`); `vite build` passes (FR-019)
+- [X] T029 [US2] Add plus, minus and remove buttons to `STORE/src/components/CartLine.vue`, calling `cart.setQty` and `cart.remove`; minus at 1 removes after no extra prompt; buttons disabled while busy or locked (FR-005)
+- [X] T030 [US2] Add the note textarea to `STORE/src/pages/CartView.vue` (shown as plain text everywhere, never as HTML; 500-character counter, saves on blur or a Save button through `cart.saveNote`, clears when empty, read-only when locked) (FR-005, FR-019)
+- [X] T031 [US2] Limits: on `over_limit` show "You can order up to N pizzas" from the server values and leave the cart unchanged; confirm persistence across reload and browser restart (`cartCredentials.js`) and a 404 gives a fresh empty cart with no error screen (FR-006, edge cases)
+- [X] T032 [US2] Vitest additions: plus/minus/remove update from the server response; note saves and clears; over-limit message; 404 resets to an empty cart
+- [X] T033 [P] [US2] Admin: show `customer_note` read-only, as plain text never HTML, above the admin note in `ADM/src/components/cart/CartDetailNotesCard.vue` (add the label string to `ADM/src/locales/en-US.js`); `vite build` passes (FR-019)
 - [ ] T034 [US2] Browser check (quickstart steps 4 note in admin and 5), including two tabs editing one cart (last change wins, each tab then shows the server's cart) and pressing Back after paying (no second payment; empty cart or thank-you) (A5)
 
 **Checkpoint**: Full cart editing and the note reach the manager.

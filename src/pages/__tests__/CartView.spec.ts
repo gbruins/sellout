@@ -89,4 +89,54 @@ describe('CartView', () => {
         expect(wrapper.find('[data-test=retry]').exists()).toBe(true)
         expect(wrapper.find('[data-test=total]').exists()).toBe(true)
     })
+
+    it('plus, minus and remove call the server and show its cart', async () => {
+        let qty = 2
+        const updateItem = vi.fn<Fn>(async (...args) => { qty = (args[0] as { qty: number }).qty })
+        const removeItem = vi.fn<Fn>(async () => { qty = 0 })
+        const { wrapper } = mountView({
+            get: async () => ({ data: cartData({ cart_items: qty ? [{ ...line, qty }] : [] }) }),
+            updateItem, removeItem,
+        })
+        await flushPromises()
+        await wrapper.find('[data-test=plus]').trigger('click'); await flushPromises()
+        expect(updateItem).toHaveBeenLastCalledWith({ id: 'l1', qty: 3 })
+        await wrapper.find('[data-test=minus]').trigger('click'); await flushPromises()
+        expect(updateItem).toHaveBeenLastCalledWith({ id: 'l1', qty: 2 })
+        qty = 1
+        await useCartStore(wrapper.vm.$pinia).load(); await flushPromises()
+        await wrapper.find('[data-test=minus]').trigger('click'); await flushPromises()
+        expect(removeItem).toHaveBeenCalledWith('l1')
+        expect(wrapper.find('[data-test=empty]').exists()).toBe(true)
+    })
+
+    it('shows the server limit message and leaves the cart unchanged', async () => {
+        const err = { response: { status: 409, data: { data: { code: 'over_limit', max_per_order: 4, remaining: 3 } } } }
+        const { wrapper } = mountView({ get: async () => ({ data: cartData() }), updateItem: async () => { throw err } })
+        await flushPromises()
+        await wrapper.find('[data-test=plus]').trigger('click'); await flushPromises()
+        expect(wrapper.find('[data-test=cart-error]').text()).toContain('You can order up to 3 pizzas.')
+        expect(wrapper.find('[data-test=qty]').text()).toBe('1')
+    })
+
+    it('saves the note on blur, shows it as text, and clears when empty', async () => {
+        const setCustomerNote = vi.fn<Fn>(async () => ({}))
+        const { wrapper } = mountView({ get: async () => ({ data: cartData({ customer_note: '<b>x</b>' }) }), setCustomerNote })
+        await flushPromises()
+        const note = wrapper.find('[data-test=note]')
+        expect((note.element as HTMLTextAreaElement).value).toBe('<b>x</b>')
+        expect(wrapper.find('b').exists()).toBe(false)
+        await note.setValue('  ')
+        await note.trigger('blur'); await flushPromises()
+        expect(setCustomerNote).toHaveBeenCalledWith(null)
+        expect(wrapper.find('[data-test=note-count]').text()).toContain('/ 500')
+    })
+
+    it('makes the note read-only and hides the buttons when locked', async () => {
+        const { wrapper } = mountView({ get: async () => ({ data: cartData({ checkout_in_progress: true }) }) })
+        await flushPromises()
+        expect((wrapper.find('[data-test=note]').element as HTMLTextAreaElement).readOnly).toBe(true)
+        expect(wrapper.find('[data-test=plus]').exists()).toBe(false)
+        expect(wrapper.find('[data-test=note-save]').exists()).toBe(false)
+    })
 })

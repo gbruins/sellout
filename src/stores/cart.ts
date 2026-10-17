@@ -75,7 +75,8 @@ export const useCartStore = defineStore('cart', () => {
             if(detail?.code === 'item_unavailable') {
                 unavailableProductId.value = detail.product_id ?? null
             }
-            if(detail?.code === 'checkout_in_progress' || detail?.code === 'item_unavailable') {
+            // A refused edit means this tab may be out of date, so show the server's cart
+            if(status === 409) {
                 try { await refresh() } catch { /* keep the message */ }
             }
             return false

@@ -97,4 +97,28 @@ describe('cart store', () => {
         await loading
         expect(store.count).toBe(0)
     })
+
+    it('a 404 on load gives an empty cart with no error', async () => {
+        const cart = {
+            credentials: mock(() => ({ id: 'c1' })),
+            get: mock(async () => { throw { response: { status: 404 } } }),
+        }
+        const store = makeStore(cart)
+        await store.load()
+        expect(store.cart).toBeNull()
+        expect(store.error).toBeNull()
+    })
+
+    it('refreshes the cart after a refused edit so a stale tab catches up', async () => {
+        const err = { response: { status: 409, data: { data: { code: 'over_limit', max_per_order: 4, remaining: 4 } } } }
+        const cart = {
+            credentials: mock(() => ({ id: 'c1' })),
+            updateItem: mock(async () => { throw err }),
+            get: mock(async () => ({ data: cartData([{ id: 'l1', qty: 2, pid: 'p1' }]) })),
+        }
+        const store = makeStore(cart)
+        await store.setQty('l1', 5)
+        expect(store.count).toBe(2)
+        expect(store.error).toContain('up to 4')
+    })
 })

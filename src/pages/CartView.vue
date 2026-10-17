@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
 import { useServiceStore } from '@/stores/service'
@@ -11,6 +11,17 @@ const service = useServiceStore()
 const route = useRoute()
 const router = useRouter()
 const cancelledNotice = ref(false)
+const noteDraft = ref('')
+const NOTE_MAX = 500
+
+watch(() => cart.cart?.customer_note, (note) => { noteDraft.value = note ?? '' }, { immediate: true })
+
+function saveNote() {
+    if(cart.locked || noteDraft.value.length > NOTE_MAX || noteDraft.value.trim() === (cart.cart?.customer_note ?? '')) {
+        return
+    }
+    cart.saveNote(noteDraft.value)
+}
 
 onMounted(async () => {
     if(route.query.checkout === 'cancelled') {
@@ -80,19 +91,28 @@ async function cancelPayment() {
                     :key="line.id"
                     :line="line"
                     :highlight="cart.unavailableProductId === line.product.id"
-                >
-                    <button
-                        v-if="!cart.locked"
-                        type="button"
-                        data-test="remove"
-                        class="mt-2 text-xs font-semibold uppercase text-zinc-400 underline hover:text-orange-500 disabled:opacity-50"
-                        :disabled="!!cart.busy"
-                        @click="cart.remove(line.id)"
-                    >
-                        Remove
-                    </button>
-                </CartLine>
+                />
             </ul>
+
+            <div class="mt-4">
+                <label for="customer-note" class="mb-1 block text-xs font-semibold uppercase text-zinc-400">Note for the kitchen</label>
+                <textarea
+                    id="customer-note"
+                    v-model="noteDraft"
+                    data-test="note"
+                    rows="3"
+                    class="w-full border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 disabled:opacity-60"
+                    :maxlength="NOTE_MAX"
+                    :readonly="cart.locked"
+                    @blur="saveNote"
+                />
+                <div class="mt-1 flex items-center justify-between text-xs text-zinc-400">
+                    <span data-test="note-count">{{ noteDraft.length }} / {{ NOTE_MAX }}</span>
+                    <button v-if="!cart.locked" type="button" data-test="note-save" class="border border-orange-700/70 px-3 py-1 font-semibold uppercase text-orange-500 disabled:opacity-50" :disabled="!!cart.busy" @click="saveNote">
+                        {{ cart.busy === 'note' ? 'Saving…' : 'Save note' }}
+                    </button>
+                </div>
+            </div>
 
             <div class="mt-4 flex items-center justify-between font-mono text-base text-zinc-100">
                 <span class="uppercase">Total</span>
