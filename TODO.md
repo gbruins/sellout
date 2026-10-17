@@ -12,5 +12,5 @@ From spec `001-next-service-display`:
 
 Follow-up specs:
 
-- `002-menu-management`: built (server, admin). Left: live stream check (T017).
-- `003-cart-checkout-ui`: built (server, storefront, admin note display). Left: the spec 001 final analyze and converge (T039).
+- `002-menu-management`: built (server, admin). Fully verified.
+- `003-cart-checkout-ui`: built (server, storefront, admin note display). Verified in the browser.

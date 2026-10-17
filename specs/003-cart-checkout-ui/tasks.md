@@ -92,7 +92,7 @@ description: "Task list for Cart and Checkout Screens"
 - [X] T036 Phone-width check at 360 px for `/cart` and the thank-you page; keyboard-only run through add, edit and pay (FR-016, SC-007)
 - [X] T037 Time the SC-001 flow (menu to Stripe page with two pizzas, under 60 seconds) and SC-006 (each add, change quantity or remove shows on screen within 1 second)
 - [X] T038 Add a "Cart" section to `SRV/README.md` (customer note route, `checkout_in_progress`, session reuse, `item_unavailable`) and update `STORE/TODO.md` (mark 003 built; the cart snapshot-drift item is closed for display only)
-- [ ] T039 Re-run the spec 001 items now unblocked: T058 (cart reset notice in the browser) and T048 and T052 (full quickstart walkthrough, `/speckit-analyze` and `/speckit-converge`); update `specs/001-next-service-display/tasks.md`
+- [X] T039 Re-run the spec 001 items now unblocked: T058 (cart reset notice in the browser) and T048 and T052 (full quickstart walkthrough, `/speckit-analyze` and `/speckit-converge`); update `specs/001-next-service-display/tasks.md`
 
 ## Dependencies and order
 

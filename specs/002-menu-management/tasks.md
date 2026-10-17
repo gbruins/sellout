@@ -50,7 +50,7 @@ description: "Task list for Menu Management"
 - [X] T014 [US2] Make the stream tick fingerprint in `SRV/server/plugins/service/ServiceState.js`/`ServiceStream.js` include menu id, published flag, ordered product IDs and product published flags, and notify the hub after `setProducts` and menu updates (FR-009)
 - [X] T015 [P] [US2] Add `usage(id)` to `ADM/src/api/service_menu.js`
 - [X] T016 [US2] In `MenusPage.vue`, before delete or unpublish of a menu, call `usage`; if services are returned, show their names (times in Los Angeles via `Format8601`, FR-010) and require confirmation, then proceed (never blocked)
-- [ ] T017 [US2] Extend `checkMenus.js`: usage lists the service; delete still succeeds; opening `/services/next/stream` and changing the menu yields a new event within 3 seconds
+- [X] T017 [US2] Extend `checkMenus.js`: usage lists the service; delete still succeeds; opening `/services/next/stream` and changing the menu yields a new event within 3 seconds
 - [X] T018 [US2] Verify FR-005: after unpublishing a menu, reopening the Service modal in `ADM/src/components/services/ServiceUpsertModal.vue` no longer lists it; fix if it does
 - [X] T018a [US2] Verify `GET /services/next` returns `menu: null` for a deleted or unpublished menu (storefront shows "menu not available yet"); in `ADM/src/pages/ServicesPage.vue` flag services whose menu is unpublished or deleted (US2 AC3, AC4)
 
