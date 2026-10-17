@@ -8,6 +8,16 @@
 
 **Input**: User description: "As the admin/store manager, I want to create and manage the menus that I assign to a service, and choose which products appear on each menu, without developer help. Today menus can only be created with SQL."
 
+## Clarifications
+
+### Session 2026-10-16
+
+- Q: What happens when the manager deletes a menu used by an open or upcoming service? → A: Warn, naming the affected services, then allow it. Affected services show "menu not available yet" until a menu is assigned.
+- Q: Is a "duplicate menu" action part of v1? → A: No. Services reference a menu by ID, so reuse covers repeat services; duplication is a later convenience.
+- Q: What happens at checkout if a product in the cart was removed from the service's menu or unpublished? → A: Checkout is refused with a clear message naming the item, and the customer removes it. This extends the existing "no longer available" refusal for unpublished or deleted products to products not on the service's current menu.
+- Q: Should the storefront key keep read access to menus? → A: Yes, but it only ever sees published menus (and their published products). Draft menus are admin-only.
+- Q: How does the manager order products on a menu? → A: Move up and move down buttons. Products without an explicit order sort after ordered ones, alphabetically.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Build a menu and assign it to a service (Priority: P1)
@@ -61,6 +71,7 @@ The manager can see at a glance which menus are published, how many products eac
 
 ### Edge Cases
 
+- A customer has a product in the cart that the manager then removes from the menu: checkout is refused for that item until it is removed (FR-008a).
 - A product on a menu is unpublished or deleted: it is not shown to visitors, and the menu editor marks it as unavailable.
 - Two menus have the same title: allowed, and the manager is warned.
 - The same product is added to a menu twice: prevented.
@@ -74,12 +85,13 @@ The manager can see at a glance which menus are published, how many products eac
 
 - **FR-001**: The manager MUST be able to create, edit, publish, unpublish and delete menus in the admin, each with a title and optional description.
 - **FR-002**: The manager MUST be able to add products to a menu and remove them, choosing from existing products, without adding the same product twice.
-- **FR-003**: The manager MUST be able to set the order products appear in on a menu, and the storefront MUST show that order.
+- **FR-003**: The manager MUST be able to set the order products appear in on a menu using move up and move down controls, and the storefront MUST show that order. Products without an explicit order sort after ordered ones, alphabetically.
 - **FR-004**: The menu list MUST show each menu's title, published state, product count and the services that use it.
 - **FR-005**: Only published menus MUST be offered when assigning a menu to a service.
-- **FR-006**: Deleting or unpublishing a menu that a service uses MUST warn the manager and name the affected services.
-- **FR-007**: Unpublished menus MUST NOT be readable with the storefront's credentials.
+- **FR-006**: Deleting or unpublishing a menu that a service uses MUST warn the manager, name the affected services, and then allow the manager to proceed. It is never blocked.
+- **FR-007**: The storefront's credentials MAY read menus, but MUST only receive published menus and published products. Unpublished menus are readable only in an admin session.
 - **FR-008**: Visitors MUST only see published products on a menu, as in spec 001.
+- **FR-008a**: Checkout MUST be refused, naming the item, when a cart holds a product that is not on the service's current published menu or is no longer published. The server decides this, not the page.
 - **FR-009**: Menu changes MUST reach a visitor with the home page open without a reload, as for other live service changes.
 - **FR-010**: Times shown on the Menus screen MUST be displayed in America/Los_Angeles.
 
@@ -104,6 +116,6 @@ The manager can see at a glance which menus are published, how many products eac
 - Product creation and editing stay on the existing Products screen; this feature only chooses which products go on a menu.
 - A service has one menu, as in spec 001.
 - Menus are reused across many services, so changing a menu changes all services that use it, including future ones.
-- Duplicating a menu is a convenience that can be added later.
+- Duplicating a menu is out of scope for v1; services share a menu by reference and editing it changes every service that uses it.
 - Menu-specific prices or per-service product availability are out of scope.
 - The storefront ordering and cart screens are in the separate spec `003-cart-checkout-ui`.
