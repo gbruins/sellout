@@ -12,5 +12,5 @@ From spec `001-next-service-display`:
 
 Follow-up specs:
 
-- `002-menu-management`: admin menu and product screens.
+- `002-menu-management`: built (server, admin). Left: live stream check (T017), and the storefront must show the checkout error `"<item>" is no longer available` (belongs to `003`).
 - `003-cart-checkout-ui`: storefront cart and checkout screens.
