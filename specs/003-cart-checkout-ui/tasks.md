@@ -82,7 +82,7 @@ description: "Task list for Cart and Checkout Screens"
 - [X] T031 [US2] Limits: on `over_limit` show "You can order up to N pizzas" from the server values and leave the cart unchanged; confirm persistence across reload and browser restart (`cartCredentials.js`) and a 404 gives a fresh empty cart with no error screen (FR-006, edge cases)
 - [X] T032 [US2] Vitest additions: plus/minus/remove update from the server response; note saves and clears; over-limit message; 404 resets to an empty cart
 - [X] T033 [P] [US2] Admin: show `customer_note` read-only, as plain text never HTML, above the admin note in `ADM/src/components/cart/CartDetailNotesCard.vue` (add the label string to `ADM/src/locales/en-US.js`); `vite build` passes (FR-019)
-- [ ] T034 [US2] Browser check (quickstart steps 4 note in admin and 5), including two tabs editing one cart (last change wins, each tab then shows the server's cart) and pressing Back after paying (no second payment; empty cart or thank-you) (A5)
+- [X] T034 [US2] Browser check (quickstart steps 4 note in admin and 5), including two tabs editing one cart (last change wins, each tab then shows the server's cart) and pressing Back after paying (no second payment; empty cart or thank-you) (A5)
 
 **Checkpoint**: Full cart editing and the note reach the manager.
 

@@ -13,4 +13,4 @@ From spec `001-next-service-display`:
 Follow-up specs:
 
 - `002-menu-management`: built (server, admin). Left: live stream check (T017).
-- `003-cart-checkout-ui`: built (server, storefront, admin note display). Left: Back-after-paying check (T034) and the spec 001 hold-overs (T039).
+- `003-cart-checkout-ui`: built (server, storefront, admin note display). Left: the spec 001 final analyze and converge (T039).

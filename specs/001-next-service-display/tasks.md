@@ -110,7 +110,7 @@
 - [X] T045 [P] [US4] Add a menu select (loading `service_menu.search`, published menus) and a "Max per order" number field (minimum 1, default 4) to `admin/src/components/services/ServiceUpsertModal.vue`, with validation and locale strings in `admin/src/locales/en-US.js`
 - [X] T046 [P] [US4] Show the menu title and per-order cap in `admin/src/pages/ServicesPage.vue`
 - [X] T047 [US4] Audit `admin/src/composables/useDate.js` and `admin/src/components/figleaf/format8601/Format8601.vue`; make service start and end display and edit in America/Los_Angeles, converting to and from UTC on save, and fix any use of the browser zone
-- [ ] T048 [US4] Verify quickstart slice 4 in the browser; note the admin has uncommitted changes of the owner's, so stage only these files when committing
+- [X] T048 [US4] Verify quickstart slice 4 in the browser; note the admin has uncommitted changes of the owner's, so stage only these files when committing
 
 ## Phase 8: Polish and cross-cutting
 
@@ -157,4 +157,4 @@
 - [X] T055 Add a CORS preflight check (including `Authorization` and `Last-Event-ID`) for the stream route to quickstart slice 2 and `scripts/checkServiceState.js` or a sibling script per SC-008 and Constitution VI (partial) — `scripts/checkCors.js` (5 checks pass)
 - [ ] T056 Verify stream buffering and compression behind the real reverse proxy once hosting is chosen, with `trustProxy` and the per-IP cap seen from a real client IP per SC-008 (partial)
 - [X] T057 Review the admin-wide change that makes `Format8601` and `FormInputDate` default to America/Los_Angeles (affects carts and address discounts pages); confirm it is intended and note it in FR-010, or scope it to the services screens per FR-010 (unrequested) — kept: FR-010 already requires LA time in the whole admin; no change needed
-- [ ] T058 Re-verify the cart reset notice (FR-016) in the browser once the cart UI from spec `003-cart-checkout-ui` exists per FR-016 (partial)
+- [X] T058 Re-verify the cart reset notice (FR-016) in the browser once the cart UI from spec `003-cart-checkout-ui` exists per FR-016
