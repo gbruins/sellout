@@ -1,0 +1,96 @@
+databases:
+  - name: strawberry-db
+    plan: basic-256mb
+    region: oregon
+
+services:
+  - type: web
+    name: strawberry-server
+    runtime: node
+    repo: https://github.com/gbruins/strawberry-server
+    branch: master
+    region: oregon
+    plan: starter
+    buildCommand: npm ci
+    preDeployCommand: npm run knex:migrate
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SERVER_HOST
+        value: 0.0.0.0
+      # Number of proxies in front of the app; confirm on the live site (spec 001 T056)
+      - key: TRUSTED_PROXY_HOPS
+        value: "1"
+      - key: DB_HOST
+        fromDatabase:
+          name: strawberry-db
+          property: host
+      - key: DB_USER
+        fromDatabase:
+          name: strawberry-db
+          property: user
+      - key: DB_PASS
+        fromDatabase:
+          name: strawberry-db
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: strawberry-db
+          property: database
+      - key: SESSION_COOKIE_PASSWORD
+        generateValue: true
+      - key: API_KEY_HASH
+        sync: false
+      - key: AUTH_USERNAME
+        sync: false
+      - key: AUTH_PASSWORD
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STOREFRONT_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      # Shared parent domain, e.g. .example.com, so the admin cookie is same-site
+      - key: SESSION_COOKIE_DOMAIN
+        sync: false
+
+  - type: web
+    name: sellout-storefront
+    runtime: static
+    repo: https://github.com/gbruins/sellout
+    branch: main
+    buildCommand: npm ci && npm run build-only
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE_URL
+        sync: false
+      - key: VITE_API_USER
+        value: store
+      - key: VITE_API_KEY
+        sync: false
+
+  - type: web
+    name: strawberry-admin
+    runtime: static
+    repo: https://github.com/gbruins/strawberry-admin
+    branch: main
+    buildCommand: npm ci && npm run build-only
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: 22.12.0
+      - key: VITE_API_BASE_URL
+        sync: false
