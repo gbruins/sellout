@@ -5,13 +5,13 @@
 | Field | Type | Notes |
 |-------|------|-------|
 | `customer_note` | text, nullable, max 500 | NEW. Written by the customer before payment; shown in the admin cart view. Separate from `admin_order_notes`. |
-| `checkout_in_progress` | boolean (virtual) | NEW in responses. True while `checkout_expires_at` is in the future and the cart is not closed. Not stored. |
+| `checkout_in_progress` | boolean (virtual) | NEW in responses. True while the cart is open and its Stripe session is still live (not expired or paid-out). Not derived from `checkout_expires_at`, which outlasts the session. Not stored. |
 
 Unchanged and used as-is: `id`, `service_id`, `closed_at`, `stripe_order_id`, `checkout_expires_at`, `num_items`, `price_subtotal`, `sales_tax`, `grand_total`, `cart_items`, `cart_reset` (one-time, store only).
 
 ## Cart line (existing `cart_items`)
 
-`id`, `cart_id`, `qty`, `product` (snapshot), plus virtual `price_subtotal`. Change: when a cart is read, `product.base_price` and `product.title` come from the current product row so the displayed total equals what checkout charges.
+`id`, `cart_id`, `qty`, `product` (snapshot), plus virtual `price_subtotal`. Change: when a cart is read (a deleted or unpublished product keeps its stored snapshot, and checkout refuses it), `product.base_price` and `product.title` come from the current product row so the displayed total equals what checkout charges.
 
 ## Storefront cart state (not persisted beyond the credentials)
 

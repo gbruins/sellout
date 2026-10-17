@@ -6,7 +6,9 @@ Prerequisites: dev DB migrated (`npm run knex:migrate` in the server repo); thro
    - cart read shows the current product price after the price is changed;
    - `PUT /cart/customer_note` saves, rejects over 500 characters, and is refused during checkout;
    - `checkout_in_progress` is true after checkout and false after cancel;
-   - a second `POST /cart/checkout` returns the same URL;
+   - a second `POST /cart/checkout` returns the same URL, and two fired in parallel create one session;
+   - `checkout_in_progress` becomes false when the session expires;
+   - an item edit during checkout gives `409` with `code: checkout_in_progress`;
    - an item taken off the menu gives `409 item_unavailable` with the title and product id;
    - a store caller cannot read or write another cart's note.
 2. **Unit tests**: `npm run test:unit -- --run` in the storefront passes, including the cart store, error mapping and cart page.

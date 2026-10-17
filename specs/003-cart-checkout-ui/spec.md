@@ -92,7 +92,7 @@ The shop can change while the visitor shops: it can sell out, close, or the mana
 - **FR-002**: Adding a pizza that is already in the cart MUST raise its quantity instead of creating a second line.
 - **FR-003**: The storefront MUST show a cart indicator with the total number of pizzas on every page, and it MUST open the cart page at `/cart`.
 - **FR-004**: The cart screen MUST list each pizza with its title, unit price, quantity and line total, and show the order total as computed by the server.
-- **FR-005**: The visitor MUST be able to change a pizza's quantity, remove a pizza, using plus, minus and remove buttons on the cart page, and add or edit a note for the kitchen (up to 500 characters), until payment begins.
+- **FR-005**: The visitor MUST be able to change a pizza's quantity, remove a pizza, using plus, minus and remove buttons on the cart page, and add or edit a customer note for the kitchen (up to 500 characters), until payment begins.
 - **FR-006**: The cart MUST persist across page reloads and browser restarts on the same device, until the order is paid, the cart is reset, or it no longer exists on the server.
 - **FR-007**: The visitor MUST be able to start card payment from the cart. The storefront MUST send them to the payment page the server provides and MUST NOT collect or handle card details itself.
 - **FR-008**: The cart MUST NOT be editable while a payment is in progress. Opening the cart then MUST show it locked with a "Payment in progress" message and two buttons: Continue to payment (back to the same payment page) and Cancel payment (which unlocks the cart for editing).

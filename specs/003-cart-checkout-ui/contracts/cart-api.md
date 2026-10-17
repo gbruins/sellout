@@ -22,11 +22,11 @@ Store and admin. Response `data` (store view omits `admin_order_notes`):
 
 - Amounts are integer cents. `product.title` and `base_price` are current values.
 - `cart_reset` appears once, when the cart was emptied because its service ended.
-- `checkout_in_progress` (NEW) is true while an unexpired checkout hold exists.
+- `checkout_in_progress` (NEW) is true while the cart's Stripe session is live.
 
 ## POST /cart/item, PUT /cart/item, DELETE /cart/item
 
-Unchanged shapes. Refusals are 409 with `data.code` of `no_open_service`, `sold_out` or `over_limit` (with `max_per_order`, `remaining`). A locked cart refuses with the existing checkout-in-progress error.
+Unchanged shapes. Refusals are 409 with `data.code` of `no_open_service`, `sold_out` or `over_limit` (with `max_per_order`, `remaining`). A locked cart refuses with `409`, `data.code: "checkout_in_progress"` (NEW code on the existing refusal).
 
 ## PUT /cart/customer_note (NEW)
 
@@ -40,7 +40,7 @@ Response: the cart as for GET. `400` if over 500 characters.
 Request: `{ "id": "uuid" }`. Response: `{ "data": { "url": "https://checkout.stripe.com/..." } }`.
 
 Changes:
-- If the cart already has an open Stripe session, its URL is returned and no new session is created.
+- If the cart already has an open Stripe session, its URL is returned and no new session is created. Simultaneous requests for one cart produce one session.
 - A line that is no longer sold now yields `409` with `data: { "code": "item_unavailable", "product_id": "uuid", "title": "Margherita" }` and `message: "\"Margherita\" is no longer available"`.
 - Other refusals are unchanged: `no_open_service`, `sold_out`, `over_limit`; `400` for an empty or closed cart.
 

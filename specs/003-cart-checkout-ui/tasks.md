@@ -18,11 +18,11 @@ description: "Task list for Cart and Checkout Screens"
 
 - [ ] T002 Add migration (run only after the user approves touching the dev DB) `SRV/server/db/migrations/100_cart_customer_note.js` adding nullable text `customer_note` to `carts` (down drops it); run it with `npm run knex:migrate`
 - [ ] T003 Add `customer_note` to `SRV/server/plugins/cart/CartModel.js` as `Joi.string().trim().max(500)` allowing null and empty; keep `admin_order_notes` unchanged and still hidden from store callers
-- [ ] T004 In `SRV/server/plugins/cart/CartService.js` `addVirtuals`, add `checkout_in_progress` = `checkout_expires_at` is in the future and `closed_at` is null (not stored)
-- [ ] T005 In `SRV/server/plugins/cart/CartItemService.js` `addRelationToCarts`, make each cart line's `product.title` and `product.base_price` the current product row values so `price_subtotal` matches what checkout charges (research R4)
+- [ ] T004 Add `checkout_in_progress` (not stored) to the `GET /cart` response in `SRV/server/plugins/cart/CartController.js` (or an `onPreResponse` helper in `cartAccess.js`): true only when the cart is open and `isCheckoutInProgress(cartId, stripe_order_id)` from `CheckoutService.js` is true, i.e. the Stripe session is still live. Do not derive it from `checkout_expires_at`, because the hold outlasts the session (A1)
+- [ ] T005 In `SRV/server/plugins/cart/CartItemService.js` `addRelationToCarts`, make each cart line's `product.title` and `product.base_price` the current product row values so `price_subtotal` matches what checkout charges (research R4). If the product row is deleted or unpublished, keep the stored snapshot values for that line; checkout then refuses it with `item_unavailable`
 - [ ] T006 [P] Create `STORE/src/stores/cart.ts` (Pinia): state `cart`, `busy` (`add|update|remove|note|pay|cancel|null`), `error`, `unavailableProductId`; getters `count`, `locked` (= `cart.checkout_in_progress`); actions `load`, `addPizza`, `setQty`, `remove`, `saveNote`, `pay`, `cancelPayment`, `reset`. Every action returns early while `busy` is set (FR-017), replaces `cart` with the server response, and sets `error` through `cartErrorMessage`. The store never computes totals (FR-013)
 - [ ] T007 [P] Extend `STORE/src/api/cart.js` with `setCustomerNote(note)` (`PUT cart/customer_note`) and `cancelCheckout()` (`POST cart/checkout/cancel`), both using the stored cart id; `checkout()` is unchanged
-- [ ] T008 [P] Add the `item_unavailable` code to `STORE/src/utils/cartErrors.ts`: message `"<title>" is no longer available` taken from `data.title`, and expose `data.product_id` so the store can highlight the line (FR-011, FR-012)
+- [ ] T008 [P] Add the `item_unavailable` and `checkout_in_progress` codes to `STORE/src/utils/cartErrors.ts`: for the first, message `"<title>" is no longer available` taken from `data.title`, and expose `data.product_id` so the store can highlight the line (FR-011, FR-012); for the second, "Payment is in progress for this cart". The store reloads the cart on `checkout_in_progress` so the locked state shows (A3)
 - [ ] T009 Add `/cart` route (name `cart`, lazy `@/pages/CartView.vue`) to `STORE/src/router/index.ts`
 
 **Checkpoint**: migration applied; `GET /cart` returns `customer_note`, `checkout_in_progress` and current prices; store, API client and route compile.
@@ -34,9 +34,9 @@ description: "Task list for Cart and Checkout Screens"
 
 ### Server
 
-- [ ] T010 In `SRV/server/plugins/cart/CheckoutService.js` `createCheckoutForCart`, if `cart.stripe_order_id` is a session id whose Stripe status is `open`, return `{ url }` of that session without expiring it, reserving stock again or creating a new session; keep the `complete` refusal (research R5, FR-017)
+- [ ] T010 In `SRV/server/plugins/cart/CheckoutService.js` `createCheckoutForCart`, if `cart.stripe_order_id` is a session id whose Stripe status is `open`, return `{ url }` of that session without expiring it, reserving stock again or creating a new session; keep the `complete` refusal (research R5, FR-017). Make creation atomic per cart so two simultaneous requests cannot both create a session: take a per-cart lock (for example a transaction with `SELECT ... FOR UPDATE` on the cart row, or a conditional update of a pending marker) around the check, reserve and create steps, and have the second request return the first's URL (A2)
 - [ ] T011 In the same function, replace the "is no longer available" throws (unpublished, deleted, not on the menu) with a Boom 409 carrying `data: { code: 'item_unavailable', product_id, title }` and message `"<title>" is no longer available`; leave other failures as they are (research R6)
-- [ ] T012 Create `SRV/scripts/checkCart.js` (pattern of `scripts/checkMenus.js`: `TMPTEST` data, admin cookie via `@hapi/iron`, store key, `global.logger` stub, cleanup, leftover count) covering: cart read shows the current price after a price change; `checkout_in_progress` after checkout; second checkout returns the same URL; a line taken off the menu gives `409 item_unavailable` with title and product id. Needs Stripe test keys; if absent, the script skips the Stripe checks and says so
+- [ ] T012 Create `SRV/scripts/checkCart.js` (pattern of `scripts/checkMenus.js`: `TMPTEST` data, admin cookie via `@hapi/iron`, store key, `global.logger` stub, cleanup, leftover count) covering: cart read shows the current price after a price change; `checkout_in_progress` true after checkout and false after the session expires (A1); second checkout returns the same URL; two checkouts fired in parallel create exactly one session (A2); a line taken off the menu gives `409 item_unavailable` with title and product id; an item edit during checkout gives `409` with `code: 'checkout_in_progress'` (A3); remaining dropping below the cart quantity makes checkout refuse with `over_limit` (A5) Needs Stripe test keys; if absent, the script skips the Stripe checks and says so
 
 ### Storefront
 
@@ -46,7 +46,7 @@ description: "Task list for Cart and Checkout Screens"
 - [ ] T016 [US1] Create `STORE/src/pages/CartView.vue`: loads the cart; empty state with a link to the menu; lines; order total; a pickup-only line and no address fields (FR-018); a Pay button that calls `cart.pay()` and sends the browser to the returned Stripe URL; Pay and Order now disabled while busy, with a visible in-progress label (FR-007, FR-017); layout that works at 360 px (FR-016, SC-007)
 - [ ] T017 [US1] Make `STORE/src/pages/OrderCompleteView.vue` also call `cart.reset()` after `$api.cart.forget()` so the indicator shows 0 (FR-009)
 - [ ] T018 [US1] Vitest: `STORE/src/stores/__tests__/cart.spec.ts` (add creates then adds; repeat taps while busy make one call; state follows the server response) and `STORE/src/pages/__tests__/CartView.spec.ts` (lines, total, empty state, Pay redirects, no address fields)
-- [ ] T019 [US1] Browser check (quickstart steps 3, 4, 9) with a Stripe test card; mark T012's Stripe checks verified here if they were skipped
+- [ ] T019 [US1] Browser check (quickstart steps 3, 4, 9) with a Stripe test card; run any Stripe-dependent checks from T012 here if the script skipped them
 
 **Checkpoint**: MVP. A visitor can buy pizza.
 
@@ -78,11 +78,11 @@ description: "Task list for Cart and Checkout Screens"
 ### Storefront
 
 - [ ] T029 [US2] Add plus, minus and remove buttons to `STORE/src/components/CartLine.vue`, calling `cart.setQty` and `cart.remove`; minus at 1 removes after no extra prompt; buttons disabled while busy or locked (FR-005)
-- [ ] T030 [US2] Add the note textarea to `STORE/src/pages/CartView.vue` (500-character counter, saves on blur or a Save button through `cart.saveNote`, clears when empty, read-only when locked) (FR-005, FR-019)
+- [ ] T030 [US2] Add the note textarea to `STORE/src/pages/CartView.vue` (shown as plain text everywhere, never as HTML; 500-character counter, saves on blur or a Save button through `cart.saveNote`, clears when empty, read-only when locked) (FR-005, FR-019)
 - [ ] T031 [US2] Limits: on `over_limit` show "You can order up to N pizzas" from the server values and leave the cart unchanged; confirm persistence across reload and browser restart (`cartCredentials.js`) and a 404 gives a fresh empty cart with no error screen (FR-006, edge cases)
 - [ ] T032 [US2] Vitest additions: plus/minus/remove update from the server response; note saves and clears; over-limit message; 404 resets to an empty cart
-- [ ] T033 [P] [US2] Admin: show `customer_note` read-only above the admin note in `ADM/src/components/cart/CartDetailNotesCard.vue` (add the label string to `ADM/src/locales/en-US.js`); `vite build` passes (FR-019)
-- [ ] T034 [US2] Browser check (quickstart steps 4 note in admin and 5)
+- [ ] T033 [P] [US2] Admin: show `customer_note` read-only, as plain text never HTML, above the admin note in `ADM/src/components/cart/CartDetailNotesCard.vue` (add the label string to `ADM/src/locales/en-US.js`); `vite build` passes (FR-019)
+- [ ] T034 [US2] Browser check (quickstart steps 4 note in admin and 5), including two tabs editing one cart (last change wins, each tab then shows the server's cart) and pressing Back after paying (no second payment; empty cart or thank-you) (A5)
 
 **Checkpoint**: Full cart editing and the note reach the manager.
 
@@ -90,7 +90,7 @@ description: "Task list for Cart and Checkout Screens"
 
 - [ ] T035 Run `npm run test:unit -- --run`, `npm run type-check` and `npm run lint` in `STORE`; run `node --require dotenv/config scripts/checkCart.js`, `checkMenus.js` and `checkServiceState.js` in `SRV`; confirm no `TMPTEST` leftovers (quickstart steps 1 and 2)
 - [ ] T036 Phone-width check at 360 px for `/cart` and the thank-you page; keyboard-only run through add, edit and pay (FR-016, SC-007)
-- [ ] T037 Time the SC-001 flow (menu to Stripe page with two pizzas, under 60 seconds)
+- [ ] T037 Time the SC-001 flow (menu to Stripe page with two pizzas, under 60 seconds) and SC-006 (each add, change quantity or remove shows on screen within 1 second)
 - [ ] T038 Add a "Cart" section to `SRV/README.md` (customer note route, `checkout_in_progress`, session reuse, `item_unavailable`) and update `STORE/TODO.md` (mark 003 built; the cart snapshot-drift item is closed for display only)
 - [ ] T039 Re-run the spec 001 items now unblocked: T058 (cart reset notice in the browser) and T048 and T052 (full quickstart walkthrough, `/speckit-analyze` and `/speckit-converge`); update `specs/001-next-service-display/tasks.md`
 

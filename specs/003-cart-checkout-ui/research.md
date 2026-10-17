@@ -21,7 +21,8 @@
 
 ## R5. Payment in progress and "Continue to payment"
 - **Decision**: Add `checkout_in_progress` to the cart response (true while an unexpired hold exists). Make `POST /cart/checkout` idempotent: if the cart has an open Stripe session, return its URL instead of expiring it and creating another. Cancel payment uses the existing `POST /cart/checkout/cancel`.
-- **Rationale**: Today a second Pay expires the first session and creates a new one, which also re-reserves stock. Reuse makes double taps and Continue safe (SC-004) and never leaves two payable sessions (Constitution III). The cart is locked during checkout, so its contents cannot differ from the session's.
+- **Rationale**: Today a second Pay expires the first session and creates a new one, which also re-reserves stock. Reuse makes double taps and Continue safe (SC-004) and never leaves two payable sessions (Constitution III). The cart is locked during checkout, so its contents cannot differ from the session's. Creation is serialized per cart (row lock or conditional update) so two simultaneous requests cannot both create a session.
+- **Flag source**: `checkout_in_progress` is computed from the live session status (`isCheckoutInProgress`), not `checkout_expires_at`, because the stock hold deliberately outlasts the session.
 - **Alternatives**: Store the session URL on the cart (extra column, URL is a bearer link); always create a new session (more Stripe calls, churn on stock hold).
 
 ## R6. Unavailable pizza refusal

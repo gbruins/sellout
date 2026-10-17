@@ -9,9 +9,10 @@ links to a `/cart` page where quantities, removal and a customer note are edited
 sends the customer to Stripe Checkout. The page handles the locked (payment in progress)
 state, the cancel return, refusals (closed, sold out, limit, unavailable pizza) and the
 cart reset notice. The server already has the cart, item and checkout routes; it needs
-four small additions: a customer note, a `checkout_in_progress` flag on the cart, a
-re-usable open payment session so double taps and "Continue to payment" never create a
-second session, and a machine-readable "item unavailable" refusal. The admin cart view
+four small additions: a customer note, a `checkout_in_progress` flag on the cart (true
+only while the Stripe session is live), a re-usable open payment session, created
+atomically per cart, so double taps and "Continue to payment" never create a second
+session, and a machine-readable "item unavailable" refusal. The admin cart view
 shows the customer note.
 
 ## Technical Context
@@ -63,7 +64,7 @@ strawberry-server/
 │   ├── CartModel.js           # customer_note (max 500)
 │   ├── CartController.js      # customer note handler
 │   ├── CartItemService.js     # cart lines use the current product price and title
-│   ├── CartService.js         # checkout_in_progress virtual
+│   ├── CartController.js      # checkout_in_progress on GET (live session check)
 │   ├── CheckoutService.js     # reuse open session; 409 item_unavailable refusal
 │   └── index.js               # PUT /cart/customer_note
 └── scripts/checkCart.js       # NEW: live verification
