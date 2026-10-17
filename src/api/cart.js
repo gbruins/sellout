@@ -45,6 +45,17 @@ export default (utils) => {
             return utils.$post('cart/checkout', { id: getCartCredentials().id });
         },
 
+        setCustomerNote: (customer_note, config) => {
+            return utils.$put('cart/customer_note', { id: getCartCredentials().id, customer_note }, config);
+        },
+
+        // Resolves with { data: { status: 'cancelled' | 'none' | 'complete' } }
+        cancelCheckout: () => {
+            return utils.$post('cart/checkout/cancel', { id: getCartCredentials().id });
+        },
+
+        credentials: getCartCredentials,
+
         forget: clearCartCredentials,
     }
 }

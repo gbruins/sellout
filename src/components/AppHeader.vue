@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import StoreOpenBadge from './StoreOpenBadge.vue'
+import CartIndicator from './CartIndicator.vue'
 </script>
 
 <template>
@@ -14,7 +15,10 @@ import StoreOpenBadge from './StoreOpenBadge.vue'
                 <StoreOpenBadge />
             </div>
 
-            <div class="shrink-0 text-xs font-medium text-zinc-400 sm:text-sm">Username</div>
+            <div class="flex shrink-0 items-center gap-4 text-xs font-medium text-zinc-400 sm:text-sm">
+                <CartIndicator />
+                <span>Username</span>
+            </div>
         </div>
     </header>
 </template>

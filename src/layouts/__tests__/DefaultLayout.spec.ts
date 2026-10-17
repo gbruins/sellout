@@ -6,7 +6,7 @@ import DefaultLayout from '../DefaultLayout.vue'
 describe('DefaultLayout', () => {
     it('renders only the slot content, with no home page content of its own', () => {
         const wrapper = mount(DefaultLayout, {
-            global: { plugins: [createPinia()], stubs: ['RouterLink'] },
+            global: { plugins: [createPinia()], stubs: ['RouterLink'], provide: { $api: { cart: { credentials: () => ({ id: null }) } } } },
             slots: { default: '<div>Page content</div>' },
         })
 
