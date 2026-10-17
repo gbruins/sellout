@@ -60,11 +60,11 @@ specs/002-menu-management/
 
 ```text
 strawberry-server/
-├── server/db/migrations/90_service_menu_product_order.js   # NEW: ordinal column + backfill
+├── server/db/migrations/90_service_menu_product_order.js   # NEW: ordinal column (no backfill)
 ├── server/plugins/serviceMenus/
-│   ├── ServiceMenuModel.js        # published-only filter for store callers
+│   ├── ServiceMenuModel.js        # unchanged (filtering lives in the controller)
 │   ├── ServiceMenuService.js      # product list/add/remove/move; usage lookup; list counts
-│   ├── ServiceMenuController.js   # handlers for the new routes
+│   ├── ServiceMenuController.js   # handlers for the new routes; published-only filter for store callers
 │   └── index.js                   # new routes; write routes stay admin-only
 ├── server/plugins/service/
 │   ├── ServiceState.js            # order by ordinal, then title; include menu changes in tick fingerprint
