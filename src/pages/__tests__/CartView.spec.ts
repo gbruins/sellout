@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import CartView from '../CartView.vue'
 import { useCartStore } from '@/stores/cart'
 
-vi.mock('@/utils/serviceStream', () => ({ openServiceStream: vi.fn(() => vi.fn()) }))
+vi.mock('@/utils/serviceStream', () => ({ openServiceStream: vi.fn<() => () => void>(() => vi.fn<() => void>()) }))
 
 const replace = vi.fn<(to: unknown) => void>()
 let query: Record<string, string> = {}

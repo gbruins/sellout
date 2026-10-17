@@ -29,7 +29,7 @@ const btn = 'h-8 w-8 border border-zinc-600 font-mono text-base text-zinc-100 ho
                 <button type="button" data-test="minus" :class="btn" :disabled="!!cart.busy" :aria-label="`Remove one ${title}`" @click="minus">−</button>
                 <span class="min-w-6 text-center font-mono text-sm text-zinc-100" aria-live="polite">{{ line.qty }}</span>
                 <button type="button" data-test="plus" :class="btn" :disabled="!!cart.busy" :aria-label="`Add one ${title}`" @click="plus">+</button>
-                <button type="button" data-test="remove" class="ml-2 text-xs font-semibold uppercase text-zinc-400 underline hover:text-orange-500 disabled:opacity-50" :disabled="!!cart.busy" :aria-label="`Remove ${title} from cart`" @click="cart.remove(line.id)">
+                <button type="button" data-test="remove" class="ml-1 min-h-8 px-2 text-xs font-semibold uppercase text-zinc-400 underline hover:text-orange-500 disabled:opacity-50" :disabled="!!cart.busy" :aria-label="`Remove ${title} from cart`" @click="cart.remove(line.id)">
                     Remove
                 </button>
             </div>

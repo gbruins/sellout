@@ -3,7 +3,7 @@
 From spec `001-next-service-display`:
 
 - **Order confirmation emails** (Postmark key is already in the server `.env`).
-- **Cart price snapshot drift**: `cart_items.product` is a snapshot, so a later price change is not reflected.
+- **Cart price snapshot drift**: closed for display (`GET /cart` returns current prices); the stored `cart_items.product` snapshot itself is still not updated.
 - **Double-payment refund path**: a second payment for an already-paid cart is only logged as "refund required".
 - **Stripe Tax**: enable and configure (`STRIPE_AUTOMATIC_TAX`).
 - **`trustProxy`**: configure for the real hosting setup so the per-IP stream cap sees client IPs.
@@ -12,5 +12,5 @@ From spec `001-next-service-display`:
 
 Follow-up specs:
 
-- `002-menu-management`: built (server, admin). Left: live stream check (T017), and the storefront must show the checkout error `"<item>" is no longer available` (belongs to `003`).
-- `003-cart-checkout-ui`: storefront cart and checkout screens.
+- `002-menu-management`: built (server, admin). Left: live stream check (T017).
+- `003-cart-checkout-ui`: built (server, storefront, admin note display). Left: Back-after-paying check (T034) and the spec 001 hold-overs (T039).

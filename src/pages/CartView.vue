@@ -108,7 +108,7 @@ async function cancelPayment() {
                 />
                 <div class="mt-1 flex items-center justify-between text-xs text-zinc-400">
                     <span data-test="note-count">{{ noteDraft.length }} / {{ NOTE_MAX }}</span>
-                    <button v-if="!cart.locked" type="button" data-test="note-save" class="border border-orange-700/70 px-3 py-1 font-semibold uppercase text-orange-500 disabled:opacity-50" :disabled="!!cart.busy" @click="saveNote">
+                    <button v-if="!cart.locked" type="button" data-test="note-save" class="min-h-9 border border-orange-700/70 px-4 py-1 font-semibold uppercase text-orange-500 disabled:opacity-50" :disabled="!!cart.busy" @click="saveNote">
                         {{ cart.busy === 'note' ? 'Saving…' : 'Save note' }}
                     </button>
                 </div>
