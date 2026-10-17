@@ -158,3 +158,4 @@
 - [ ] T056 Verify stream buffering and compression behind the real reverse proxy once hosting is chosen, with `trustProxy` and the per-IP cap seen from a real client IP per SC-008 (partial)
 - [X] T057 Review the admin-wide change that makes `Format8601` and `FormInputDate` default to America/Los_Angeles (affects carts and address discounts pages); confirm it is intended and note it in FR-010, or scope it to the services screens per FR-010 (unrequested) — kept: FR-010 already requires LA time in the whole admin; no change needed
 - [X] T058 Re-verify the cart reset notice (FR-016) in the browser once the cart UI from spec `003-cart-checkout-ui` exists per FR-016
+- [X] T059 Load the service state on `/order/complete` so the header badge matches the shop (FR-013); `OrderCompleteView.vue` plus `OrderCompleteView.spec.ts` (found by the spec 001 analyze)
