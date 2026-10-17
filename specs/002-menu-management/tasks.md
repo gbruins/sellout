@@ -67,9 +67,9 @@ description: "Task list for Menu Management"
 
 - [X] T022 [P] Add a "Menus" section (endpoints, store filtering, ordering) to `SRV/README.md`
 - [X] T023 [P] `vite build` and eslint on new admin files; fix issues in them only
-- [ ] T024 Run `checkMenus.js` and `checkServiceState.js`; confirm no `TMPTEST` leftovers
+- [X] T024 Run `checkMenus.js` and `checkServiceState.js`; confirm no `TMPTEST` leftovers
 - [X] T025 Browser check of the Menus screen using a throwaway server and a self-signed `sbsession` cookie (admin route guard is already disabled locally); also time the SC-001 flow: create, add, reorder, publish, assign to a service, delete with warning
-- [ ] T026 Update `STORE/TODO.md`: spec 003 must show the "no longer available" checkout message; mark `specs/002` progress
+- [X] T026 Update `STORE/TODO.md`: spec 003 must show the "no longer available" checkout message; mark `specs/002` progress
 - [X] T027 Confirm admin dates on the Menus screen use Los Angeles time (FR-010)
 
 ## Dependencies
