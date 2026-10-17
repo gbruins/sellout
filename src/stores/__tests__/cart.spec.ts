@@ -81,4 +81,20 @@ describe('cart store', () => {
         const cart = { credentials: mock(() => ({ id: 'c1' })), checkout: mock(async () => ({ data: { url: 'https://stripe.test/x' } })) }
         expect(await makeStore(cart).pay()).toBe('https://stripe.test/x')
     })
+
+    it('ignores a cart response that arrives after the cart was forgotten', async () => {
+        let id: string | null = 'c1'
+        let release: () => void = () => {}
+        const cart = {
+            credentials: mock(() => ({ id })),
+            get: mock(() => new Promise((r) => { release = () => r({ data: cartData([{ id: 'l1', qty: 1, pid: 'p1' }]) }) })),
+        }
+        const store = makeStore(cart)
+        const loading = store.load()
+        id = null
+        store.reset()
+        release()
+        await loading
+        expect(store.count).toBe(0)
+    })
 })

@@ -38,7 +38,13 @@ export const useCartStore = defineStore('cart', () => {
     const hasCart = () => !!api!.cart.credentials().id
 
     async function refresh() {
-        cart.value = (await api!.cart.get()).data
+        const id = api!.cart.credentials().id
+        const data = (await api!.cart.get()).data
+        // The cart was forgotten (e.g. after payment) while this request was in flight
+        if(api!.cart.credentials().id !== id) {
+            return
+        }
+        cart.value = data
     }
 
     // Runs one action at a time; a second tap while busy does nothing
