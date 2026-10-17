@@ -118,7 +118,7 @@
 - [X] T050 [P] Update `server/README.md` with the new routes, the stream behavior, `SERVICE_STREAMS_PER_IP`, `trustProxy` and any proxy buffering notes
 - [X] T051 [P] Create `store/TODO.md` with the deferred items: order confirmation emails, cart price snapshot drift, double-payment refund path, Stripe Tax, `trustProxy`, and the follow-up specs `002-menu-management` (menu and product screens) and `003-cart-checkout-ui` (cart and checkout screens)
 - [X] T053 [P] Add a server check script (curl plus SQL, throwaway server) for `buildState` boundaries: exactly at `start_at`, exactly at `end_at`, a service ending as the next begins, a daylight saving change date, and the count at load being current after a hold, cancel and expiry (SC-002, SC-005)
-- [ ] T052 Run the full quickstart once, clean up temporary rows, and run `/speckit-analyze` then `/speckit-converge` to confirm nothing is missing
+- [X] T052 Run the full quickstart once, clean up temporary rows, and run `/speckit-analyze` then `/speckit-converge` to confirm nothing is missing
 
 ## Dependencies and Order
 
