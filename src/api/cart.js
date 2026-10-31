@@ -40,7 +40,9 @@ export default (utils) => {
             return utils.$delete('cart/item', { id }, config);
         },
 
-        // Resolves with { data: { url } }; send the browser to that Stripe-hosted page
+        // Resolves with { data: { client_secret } }; mount Stripe's Embedded Checkout with it
+        // (research.md decision — rendered inline on our own page, not a redirect to a
+        // Stripe-hosted page).
         checkout: () => {
             return utils.$post('cart/checkout', { id: getCartCredentials().id });
         },

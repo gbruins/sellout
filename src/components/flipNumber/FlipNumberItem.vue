@@ -53,13 +53,13 @@ onBeforeUnmount(() => {
 .flip {
   display: inline-block;
   position: relative;
-  width: 2.5rem;
-  height: 3.75rem;
-  line-height: 3.75rem;
+  width: 2.75rem;
+  height: 4.125rem;
+  line-height: 4.125rem;
   border: solid 1px #171310;
   border-radius: 6px;
   background: #2b241d;
-  font-size: 2.5rem;
+  font-size: 2.75rem;
   color: #ffffff;
   text-align: center;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -68,10 +68,10 @@ onBeforeUnmount(() => {
 
 @media (min-width: 640px) {
   .flip {
-    width: 3.75rem;
-    height: 5.5rem;
-    font-size: 3.75rem;
-    line-height: 5.5rem;
+    width: 4.25rem;
+    height: 6.25rem;
+    font-size: 4.25rem;
+    line-height: 6.25rem;
   }
 }
 

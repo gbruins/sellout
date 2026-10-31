@@ -1,19 +1,21 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { loadStripe, type StripeEmbeddedCheckout } from '@stripe/stripe-js'
 import { useCartStore } from '@/stores/cart'
 import { useServiceStore } from '@/stores/service'
 import CartLine from '@/components/CartLine.vue'
 import { formatPrice } from '@/utils/format'
 import { Button } from '@/components/ui/button'
 
+const EMBEDDED_CHECKOUT_CONTAINER_ID = 'embedded-checkout-container'
+
 const cart = useCartStore()
 const service = useServiceStore()
-const route = useRoute()
-const router = useRouter()
-const cancelledNotice = ref(false)
 const noteDraft = ref('')
 const NOTE_MAX = 500
+const embeddedCheckoutContainer = ref<HTMLElement | null>(null)
+
+let checkoutInstance: StripeEmbeddedCheckout | null = null
 
 watch(() => cart.cart?.customer_note, (note) => { noteDraft.value = note ?? '' }, { immediate: true })
 
@@ -24,17 +26,57 @@ function saveNote() {
     cart.saveNote(noteDraft.value)
 }
 
-onMounted(async () => {
-    if(route.query.checkout === 'cancelled') {
-        cancelledNotice.value = true
-        router.replace({ name: 'cart' })
+function destroyCheckout() {
+    checkoutInstance?.destroy()
+    checkoutInstance = null
+}
+
+// Mounts Stripe's Embedded Checkout inline once a client_secret exists — either just created by
+// clicking Pay, or already in progress from an earlier visit (checkoutClientSecret is only
+// in-memory, so a page reload needs pay() called again; the server hands back the *same*
+// session rather than creating a new one, confirmed in strawberry-server's checkout tests).
+watch(() => cart.checkoutClientSecret, async (clientSecret) => {
+    destroyCheckout()
+
+    if(!clientSecret) {
+        return
     }
 
+    const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+    const stripe = await loadStripe(publishableKey)
+    if(!stripe || cart.checkoutClientSecret !== clientSecret) {
+        return
+    }
+
+    // #embedded-checkout-container only exists once cart.locked is true (same template
+    // branch). flush: 'post' (below) guarantees that DOM update has already landed before this
+    // callback runs; checking the template ref here is a second, cheap guard against mounting
+    // into a selector that briefly matches nothing (the exact failure Stripe's SDK throws on).
+    if(!embeddedCheckoutContainer.value) {
+        return
+    }
+
+    checkoutInstance = await stripe.createEmbeddedCheckoutPage({
+        fetchClientSecret: () => Promise.resolve(clientSecret),
+    })
+    checkoutInstance.mount(`#${EMBEDDED_CHECKOUT_CONTAINER_ID}`)
+}, { flush: 'post' })
+
+onMounted(async () => {
     await Promise.all([cart.load(), service.load()])
     service.connect()
+
+    // Locked from an earlier visit (not just-now, which the watcher above already handles) —
+    // fetch the existing session's client_secret to resume rather than show a dead end.
+    if(cart.locked && !cart.checkoutClientSecret) {
+        await cart.pay()
+    }
 })
 
-onBeforeUnmount(() => service.disconnect())
+onBeforeUnmount(() => {
+    service.disconnect()
+    destroyCheckout()
+})
 
 // Paying and editing need an open shop with pizzas left
 const closedReason = computed(() => {
@@ -44,14 +86,12 @@ const closedReason = computed(() => {
 })
 const hasItems = computed(() => !!cart.cart?.cart_items.length)
 
-async function pay() {
-    const url = await cart.pay()
-    if(url) {
-        window.location.assign(url)
-    }
+function pay() {
+    return cart.pay()
 }
 
 async function cancelPayment() {
+    destroyCheckout()
     await cart.cancelPayment()
     await cart.load()
 }
@@ -60,10 +100,6 @@ async function cancelPayment() {
 <template>
     <section class="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6" aria-labelledby="cart-title">
         <h1 id="cart-title" class="mb-5 border-b border-border pb-3 font-heading text-2xl font-semibold text-foreground">Your cart</h1>
-
-        <p v-if="cancelledNotice" role="status" data-test="cancelled" class="mb-4 rounded-md border border-border bg-secondary px-3 py-2 text-sm text-secondary-foreground">
-            Payment cancelled. Your cart is still here.
-        </p>
 
         <p v-if="cart.error" role="alert" data-test="cart-error" class="mb-4 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
             {{ cart.error }}
@@ -83,10 +119,12 @@ async function cancelPayment() {
 
         <template v-else-if="cart.cart">
             <p v-if="cart.locked" role="status" data-test="locked" class="mb-4 rounded-md border border-primary/40 bg-primary/5 px-3 py-2 text-sm text-foreground">
-                Payment in progress. Continue to payment, or cancel it to change your order.
+                Enter your card details below to finish paying, or cancel to change your order.
             </p>
 
-            <ul class="divide-y divide-border rounded-lg border border-border bg-card">
+            <!-- Once locked, Stripe's own embedded form below shows its own itemized order
+                 summary — hide ours so the visitor isn't shown the same line items twice. -->
+            <ul v-if="!cart.locked" class="divide-y divide-border rounded-lg border border-border bg-card">
                 <CartLine
                     v-for="line in cart.cart.cart_items"
                     :key="line.id"
@@ -95,7 +133,9 @@ async function cancelPayment() {
                 />
             </ul>
 
-            <div class="mt-4">
+            <!-- Same reasoning as the item list above: once locked, editing is over and the
+                 note was already saved, so there's nothing left here the payment step needs. -->
+            <div v-if="!cart.locked" class="mt-4">
                 <label for="customer-note" class="mb-1 block text-xs font-semibold uppercase text-muted-foreground">Note for the kitchen</label>
                 <textarea
                     id="customer-note"
@@ -104,12 +144,11 @@ async function cancelPayment() {
                     rows="3"
                     class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground disabled:opacity-60"
                     :maxlength="NOTE_MAX"
-                    :readonly="cart.locked"
                     @blur="saveNote"
                 />
                 <div class="mt-1 flex items-center justify-between text-xs text-muted-foreground">
                     <span data-test="note-count">{{ noteDraft.length }} / {{ NOTE_MAX }}</span>
-                    <Button v-if="!cart.locked" type="button" data-test="note-save" variant="outline" size="sm" :disabled="!!cart.busy" @click="saveNote">
+                    <Button type="button" data-test="note-save" variant="outline" size="sm" :disabled="!!cart.busy" @click="saveNote">
                         {{ cart.busy === 'note' ? 'Saving…' : 'Save note' }}
                     </Button>
                 </div>
@@ -119,27 +158,36 @@ async function cancelPayment() {
                 <span class="font-semibold">Total</span>
                 <span data-test="total" class="font-heading text-lg font-semibold text-primary">{{ formatPrice(cart.cart.grand_total) }}</span>
             </div>
-            <p class="mt-2 text-xs text-muted-foreground" data-test="pickup">Pickup only. Pay by card on the next page.</p>
 
             <template v-if="cart.locked">
-                <Button type="button" data-test="continue" class="mt-6 w-full bg-primary text-primary-foreground hover:bg-primary/90" size="lg" :disabled="!!cart.busy" @click="pay">
-                    {{ cart.busy === 'pay' ? 'Opening payment…' : 'Continue to payment' }}
-                </Button>
+                <p class="mt-2 text-xs text-muted-foreground" data-test="pickup">Pickup only.</p>
+
+                <div
+                    v-if="cart.busy === 'pay' && !cart.checkoutClientSecret"
+                    class="mt-4 rounded-md border border-border bg-card py-10 text-center text-sm text-muted-foreground"
+                >
+                    Loading payment form…
+                </div>
+                <div ref="embeddedCheckoutContainer" :id="EMBEDDED_CHECKOUT_CONTAINER_ID" class="mt-4" data-test="embedded-checkout" />
+
                 <Button type="button" data-test="cancel" variant="outline" class="mt-3 w-full" size="lg" :disabled="!!cart.busy" @click="cancelPayment">
                     {{ cart.busy === 'cancel' ? 'Cancelling…' : 'Cancel payment' }}
                 </Button>
             </template>
-            <Button
-                v-else
-                type="button"
-                data-test="pay"
-                class="mt-6 w-full bg-primary text-primary-foreground hover:bg-primary/90"
-                size="lg"
-                :disabled="!!cart.busy || !!closedReason"
-                @click="pay"
-            >
-                {{ cart.busy === 'pay' ? 'Opening payment…' : 'Pay' }}
-            </Button>
+            <template v-else>
+                <p class="mt-2 text-xs text-muted-foreground" data-test="pickup">Pickup only.</p>
+
+                <Button
+                    type="button"
+                    data-test="pay"
+                    class="mt-6 w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                    size="lg"
+                    :disabled="!!cart.busy || !!closedReason"
+                    @click="pay"
+                >
+                    {{ cart.busy === 'pay' ? 'Opening payment…' : 'Pay' }}
+                </Button>
+            </template>
         </template>
     </section>
 </template>

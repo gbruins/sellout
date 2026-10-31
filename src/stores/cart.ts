@@ -33,6 +33,9 @@ export const useCartStore = defineStore('cart', () => {
     const unavailableProductId = ref<string | null>(null)
     // True when the last failure was a network or server error, so trying again may work
     const retryable = ref(false)
+    // Set once a Checkout Session exists; the component mounts Stripe's Embedded Checkout with
+    // it (research.md decision — inline on our own page, not a redirect to a Stripe-hosted one)
+    const checkoutClientSecret = ref<string | null>(null)
 
     const count = computed(() => cart.value?.num_items ?? 0)
     const locked = computed(() => !!cart.value?.checkout_in_progress)
@@ -139,14 +142,32 @@ export const useCartStore = defineStore('cart', () => {
         return run('note', () => api!.cart.setCustomerNote(note.trim() || null))
     }
 
-    // Resolves with the Stripe URL to send the browser to
-    async function pay(): Promise<string | null> {
-        const result = await run('pay', async () => (await api!.cart.checkout()).data?.url ?? null, false)
-        return typeof result === 'string' ? result : null
+    // Creates (or re-fetches) the Checkout Session and stores its client_secret for the
+    // component to mount. Reloads the cart afterward (unlike most actions this store doesn't
+    // reload for) so `locked` reflects the now-in-progress checkout right away — the visitor
+    // stays on this page instead of navigating off, so that can't be left stale.
+    async function pay(): Promise<boolean> {
+        // checkoutClientSecret is set only after run()'s automatic refresh() below has already
+        // updated cart.checkout_in_progress (and so `locked`) — CartView only mounts Stripe's
+        // embedded form once `locked` is true, so setting the secret first (and racing it
+        // against the slower refresh()) could point Stripe at a container div that doesn't
+        // exist in the DOM yet (the bug this ordering fixes).
+        const result = await run('pay', async () => {
+            const clientSecret = (await api!.cart.checkout()).data?.client_secret ?? null
+            return clientSecret
+        })
+        if(typeof result === 'string') {
+            checkoutClientSecret.value = result
+        }
+        return typeof result === 'string'
     }
 
     async function cancelPayment() {
-        return run('cancel', () => api!.cart.cancelCheckout())
+        const result = await run('cancel', () => api!.cart.cancelCheckout())
+        if(result) {
+            checkoutClientSecret.value = null
+        }
+        return result
     }
 
     function clearError() {
@@ -160,7 +181,8 @@ export const useCartStore = defineStore('cart', () => {
         error.value = null
         retryable.value = false
         unavailableProductId.value = null
+        checkoutClientSecret.value = null
     }
 
-    return { cart, busy, error, retryable, unavailableProductId, count, locked, load, addPizza, setQty, remove, saveNote, pay, cancelPayment, clearError, reset }
+    return { cart, busy, error, retryable, unavailableProductId, checkoutClientSecret, count, locked, load, addPizza, setQty, remove, saveNote, pay, cancelPayment, clearError, reset }
 })

@@ -49,20 +49,20 @@ describe('api auth wiring', () => {
         expect(config.headers['X-Cart-Token']).toBe('tok-1');
     });
 
-    it('posts the stored cart id to checkout and returns the Stripe url', async () => {
+    it('posts the stored cart id to checkout and returns a Stripe client_secret', async () => {
         const $api = installApi();
         saveCartCredentials('cart-1', 'tok-1');
         let request;
         axiosInstance.defaults.adapter = async (config) => {
             request = config;
-            return { data: { data: { url: 'https://checkout.stripe.com/x' } }, status: 200, statusText: 'OK', headers: {}, config };
+            return { data: { data: { client_secret: 'cs_test_x_secret_y' } }, status: 200, statusText: 'OK', headers: {}, config };
         };
 
         const response = await $api.cart.checkout();
 
         expect(request.url).toBe('cart/checkout');
         expect(JSON.parse(request.data)).toEqual({ id: 'cart-1' });
-        expect(response.data.url).toBe('https://checkout.stripe.com/x');
+        expect(response.data.client_secret).toBe('cs_test_x_secret_y');
     });
 
     it('shows the one-time notice when the server reports the cart was reset', async () => {

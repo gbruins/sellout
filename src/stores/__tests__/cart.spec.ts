@@ -71,15 +71,23 @@ describe('cart store', () => {
             get: mock(async () => ({ data: cartData([{ id: 'l1', qty: 1, pid: 'p1' }]) })),
         }
         const store = makeStore(cart)
-        expect(await store.pay()).toBeNull()
+        expect(await store.pay()).toBe(false)
         expect(store.error).toContain('"Margherita" is no longer available')
         expect(store.unavailableProductId).toBe('p1')
         expect(store.busy).toBeNull()
+        expect(store.checkoutClientSecret).toBeNull()
     })
 
-    it('returns the Stripe url from pay', async () => {
-        const cart = { credentials: mock(() => ({ id: 'c1' })), checkout: mock(async () => ({ data: { url: 'https://stripe.test/x' } })) }
-        expect(await makeStore(cart).pay()).toBe('https://stripe.test/x')
+    it('stores the client_secret from pay, and reloads the cart so locked updates right away', async () => {
+        const cart = {
+            credentials: mock(() => ({ id: 'c1' })),
+            checkout: mock(async () => ({ data: { client_secret: 'cs_test_x_secret_y' } })),
+            get: mock(async () => ({ data: { ...cartData(), checkout_in_progress: true } })),
+        }
+        const store = makeStore(cart)
+        expect(await store.pay()).toBe(true)
+        expect(store.checkoutClientSecret).toBe('cs_test_x_secret_y')
+        expect(store.locked).toBe(true)
     })
 
     it('ignores a cart response that arrives after the cart was forgotten', async () => {

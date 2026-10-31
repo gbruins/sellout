@@ -7,14 +7,19 @@ import HomeView from '../HomeView.vue'
 vi.mock('@/utils/serviceStream', () => ({ openServiceStream: vi.fn(() => vi.fn()) }))
 vi.mock('vue-sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
+const routerPush = vi.fn()
+vi.mock('vue-router', () => ({ useRouter: () => ({ push: routerPush }) }))
+
 beforeEach(() => {
     vi.mocked(toast.success).mockClear()
     vi.mocked(toast.error).mockClear()
+    routerPush.mockClear()
 })
 
-const mountHome = (getNext: () => Promise<unknown>, cart: Record<string, unknown> = {}) =>
+const mountHome = (getNext: () => Promise<unknown>, cart: Record<string, unknown> = {}, opts: Record<string, unknown> = {}) =>
     mount(HomeView, {
         global: { plugins: [createPinia()], provide: { $api: { service: { getNext }, cart: { credentials: () => ({ id: null }), ...cart } } } },
+        ...opts,
     })
 
 const win = { id: 's', start_at: '2026-10-17T19:00:00.000Z', end_at: '2026-10-18T02:00:00.000Z', notes: 'Pickup at the garage door', inventory_count: 60, max_per_order: 4 }
@@ -70,7 +75,7 @@ describe('HomeView', () => {
         expect(wrapper.get('li button').attributes('disabled')).toBeDefined()
     })
 
-    it('shows a success toast when an order is placed', async () => {
+    it('shows the added-to-cart popup (not a toast) when an order is placed', async () => {
         const menu = { id: 'm', title: 'Menu', description: null, products: [{ id: 'p', title: 'Margherita', description: null, base_price: 2200 }] }
         const wrapper = mountHome(
             async () => ({ ...base, status: 'open', service: win, remaining: 5, menu }),
@@ -79,14 +84,52 @@ describe('HomeView', () => {
                 addItem: vi.fn(async () => ({})),
                 get: vi.fn(async () => ({ data: { id: 'c1', num_items: 1, price_subtotal: 2200, grand_total: 2200, customer_note: null, checkout_in_progress: false, cart_items: [] } })),
             },
+            // AddedToCartPopup uses <Teleport to="body"> — attach to a real DOM node so its
+            // content lands in document.body predictably and can be found below.
+            { attachTo: document.body },
         )
         await flushPromises()
 
         await wrapper.get('[data-test="order"]').trigger('click')
         await flushPromises()
 
-        expect(toast.success).toHaveBeenCalledWith('Added 1× Margherita to cart')
+        const popup = document.querySelector('[data-test="added-to-cart-popup"]')
+        expect(popup).not.toBeNull()
+        expect(popup!.textContent).toContain('Margherita')
+        expect(popup!.textContent).toContain('Qty 1')
+        expect(popup!.textContent).toContain('22.00')
+        expect(toast.success).not.toHaveBeenCalled()
         expect(toast.error).not.toHaveBeenCalled()
+        wrapper.unmount()
+    })
+
+    it('Checkout in the popup navigates to the cart and starts payment', async () => {
+        const menu = { id: 'm', title: 'Menu', description: null, products: [{ id: 'p', title: 'Margherita', description: null, base_price: 2200 }] }
+        const checkout = vi.fn(async () => ({ data: { client_secret: 'cs_test_x_secret_y' } }))
+        const wrapper = mountHome(
+            async () => ({ ...base, status: 'open', service: win, remaining: 5, menu }),
+            {
+                create: vi.fn(async () => ({})),
+                addItem: vi.fn(async () => ({})),
+                checkout,
+                get: vi.fn(async () => ({ data: { id: 'c1', num_items: 1, price_subtotal: 2200, grand_total: 2200, customer_note: null, checkout_in_progress: false, cart_items: [] } })),
+            },
+            { attachTo: document.body },
+        )
+        await flushPromises()
+
+        await wrapper.get('[data-test="order"]').trigger('click')
+        await flushPromises()
+
+        const checkoutButton = document.querySelector<HTMLButtonElement>('[data-test="checkout"]')
+        expect(checkoutButton).not.toBeNull()
+        checkoutButton!.click()
+        await flushPromises()
+
+        expect(routerPush).toHaveBeenCalledWith('/cart')
+        expect(checkout).toHaveBeenCalled()
+        expect(document.querySelector('[data-test="added-to-cart-popup"]')).toBeNull()
+        wrapper.unmount()
     })
 
     it('shows an error toast, not a success toast, when the order exceeds the limit', async () => {

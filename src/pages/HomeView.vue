@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive } from 'vue'
 import { toast } from 'vue-sonner'
 import { useServiceStore, type MenuProduct } from '@/stores/service'
 import { useCartStore } from '@/stores/cart'
 import AcceptingOrdersHero from '@/components/AcceptingOrdersHero.vue'
+import AddedToCartPopup from '@/components/AddedToCartPopup.vue'
 import PizzaList from '@/components/PizzaList.vue'
 import ServiceClosedCard from '@/components/ServiceClosedCard.vue'
 import ServiceStatusNotice from '@/components/ServiceStatusNotice.vue'
@@ -21,6 +22,13 @@ onBeforeUnmount(() => service.disconnect())
 const isOpen = computed(() => service.status === 'open' || service.status === 'sold_out')
 const isClosed = computed(() => service.status === 'upcoming' || service.status === 'none')
 
+const addedPopup = reactive<{ open: boolean, title: string, qty: number, price: number | null }>({
+    open: false,
+    title: '',
+    qty: 1,
+    price: null,
+})
+
 async function onOrder(pizza: MenuProduct, qty: number) {
     await cart.addPizza(pizza, qty)
 
@@ -29,7 +37,10 @@ async function onOrder(pizza: MenuProduct, qty: number) {
         cart.clearError()
     }
     else {
-        toast.success(`Added ${qty}× ${pizza.title} to cart`)
+        addedPopup.title = pizza.title
+        addedPopup.qty = qty
+        addedPopup.price = pizza.base_price != null ? pizza.base_price * qty : null
+        addedPopup.open = true
     }
 }
 </script>
@@ -55,4 +66,11 @@ async function onOrder(pizza: MenuProduct, qty: number) {
     </template>
 
     <ServiceClosedCard v-else-if="isClosed" :service="service.service" />
+
+    <AddedToCartPopup
+        v-model:open="addedPopup.open"
+        :title="addedPopup.title"
+        :qty="addedPopup.qty"
+        :price="addedPopup.price"
+    />
 </template>

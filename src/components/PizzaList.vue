@@ -96,7 +96,7 @@ if (props.menu) {
                                 :disabled="disabled"
                                 @click="onOrder(pizza)"
                             >
-                                Order Pie
+                                Order
                                 <ShoppingCartIcon class="size-4" aria-hidden="true" />
                             </Button>
                         </div>

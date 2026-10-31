@@ -6,11 +6,12 @@ import { useCartStore } from '@/stores/cart'
 
 vi.mock('@/utils/serviceStream', () => ({ openServiceStream: vi.fn<() => () => void>(() => vi.fn<() => void>()) }))
 
-const replace = vi.fn<(to: unknown) => void>()
-let query: Record<string, string> = {}
-vi.mock('vue-router', () => ({
-    useRoute: () => ({ query }),
-    useRouter: () => ({ replace }),
+const mountCheckout = vi.fn()
+const destroyCheckout = vi.fn()
+vi.mock('@stripe/stripe-js', () => ({
+    loadStripe: vi.fn(async () => ({
+        createEmbeddedCheckoutPage: vi.fn(async () => ({ mount: mountCheckout, unmount: vi.fn(), destroy: destroyCheckout })),
+    })),
 }))
 
 const line = { id: 'l1', qty: 1, price_subtotal: 1400, product: { id: 'p1', title: 'Margherita', base_price: 1400 } }
@@ -22,7 +23,6 @@ const serviceState = (status: string) => ({ status, server_now: new Date().toISO
 
 type Fn = (...args: unknown[]) => unknown
 const mountView = (cart: Record<string, Fn>, status = 'open') => {
-    query = {}
     const pinia = createPinia()
     const wrapper = mount(CartView, {
         global: {
@@ -35,30 +35,22 @@ const mountView = (cart: Record<string, Fn>, status = 'open') => {
 }
 
 describe('CartView', () => {
-    it('shows the locked state with Continue and Cancel, and no edits', async () => {
+    it('shows the locked state, mounts the embedded form, and no edits', async () => {
         const cancelCheckout = vi.fn<Fn>(async () => ({}))
-        const { wrapper } = mountView({ get: async () => ({ data: cartData({ checkout_in_progress: true }) }), cancelCheckout })
+        const checkout = vi.fn<Fn>(async () => ({ data: { client_secret: 'cs_test_x_secret_y' } }))
+        const { wrapper } = mountView({ get: async () => ({ data: cartData({ checkout_in_progress: true }) }), cancelCheckout, checkout })
         await flushPromises()
-        expect(wrapper.find('[data-test=locked]').text()).toContain('Payment in progress')
+        // Already locked on arrival (e.g. a page reload) — the component fetches the existing
+        // session's client_secret on its own, with no click required, and mounts the form.
+        expect(checkout).toHaveBeenCalled()
+        expect(mountCheckout).toHaveBeenCalledWith('#embedded-checkout-container')
+        expect(wrapper.find('[data-test=locked]').text()).toContain('finish paying')
         expect(wrapper.find('[data-test=remove]').exists()).toBe(false)
         expect(wrapper.find('[data-test=pay]').exists()).toBe(false)
         await wrapper.find('[data-test=cancel]').trigger('click')
         await flushPromises()
         expect(cancelCheckout).toHaveBeenCalled()
-    })
-
-    it('shows the cancel message once and clears the query', async () => {
-        query = { checkout: 'cancelled' }
-        const wrapper = mount(CartView, {
-            global: {
-                plugins: [createPinia()], stubs: { RouterLink: true },
-                provide: { $api: { cart: { credentials: () => ({ id: 'c1' }), get: async () => ({ data: cartData() }) }, service: { getNext: async () => serviceState('open') } } },
-            },
-        })
-        await flushPromises()
-        expect(wrapper.find('[data-test=cancelled]').exists()).toBe(true)
-        expect(replace).toHaveBeenCalledWith({ name: 'cart' })
-        expect(wrapper.find('[data-test=total]').exists()).toBe(true)
+        expect(destroyCheckout).toHaveBeenCalled()
     })
 
     it('highlights the unavailable pizza, never leaves for Stripe, and lets the visitor remove it', async () => {
@@ -132,10 +124,11 @@ describe('CartView', () => {
         expect(wrapper.find('[data-test=note-count]').text()).toContain('/ 500')
     })
 
-    it('makes the note read-only and hides the buttons when locked', async () => {
-        const { wrapper } = mountView({ get: async () => ({ data: cartData({ checkout_in_progress: true }) }) })
+    it('hides the note section and item controls when locked', async () => {
+        const checkout = vi.fn<Fn>(async () => ({ data: { client_secret: 'cs_test_x_secret_y' } }))
+        const { wrapper } = mountView({ get: async () => ({ data: cartData({ checkout_in_progress: true }) }), checkout })
         await flushPromises()
-        expect((wrapper.find('[data-test=note]').element as HTMLTextAreaElement).readOnly).toBe(true)
+        expect(wrapper.find('[data-test=note]').exists()).toBe(false)
         expect(wrapper.find('[data-test=plus]').exists()).toBe(false)
         expect(wrapper.find('[data-test=note-save]').exists()).toBe(false)
     })
