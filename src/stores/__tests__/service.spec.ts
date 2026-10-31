@@ -76,7 +76,7 @@ describe('service store', () => {
 
     describe('live stream', () => {
         const openState = (remaining: number) => ({
-            status: 'open' as const, server_now: new Date().toISOString(), service: window, remaining,
+            status: 'open' as const, server_now: new Date().toISOString(), timezone: 'America/Los_Angeles', service: window, remaining,
             menu: null, next_service: null,
         })
 

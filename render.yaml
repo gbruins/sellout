@@ -1,8 +1,3 @@
-databases:
-  - name: strawberry-db
-    plan: basic-256mb
-    region: oregon
-
 services:
   - type: web
     name: strawberry-server
@@ -23,29 +18,28 @@ services:
       # Number of proxies in front of the app; confirm on the live site (spec 001 T056)
       - key: TRUSTED_PROXY_HOPS
         value: "1"
-      - key: DB_HOST
-        fromDatabase:
-          name: strawberry-db
-          property: host
-      - key: DB_USER
-        fromDatabase:
-          name: strawberry-db
-          property: user
-      - key: DB_PASS
-        fromDatabase:
-          name: strawberry-db
-          property: password
-      - key: DB_NAME
-        fromDatabase:
-          name: strawberry-db
-          property: database
-      - key: SESSION_COOKIE_PASSWORD
-        generateValue: true
-      - key: API_KEY_HASH
+      # Production Supabase project — a SEPARATE Supabase project from local dev's, set once
+      # in the Render dashboard (specs/004-multi-tenant-supabase). Direct/session-mode
+      # connection (research.md #1), not the pgbouncer pooler.
+      - key: SUPABASE_DB_HOST
         sync: false
-      - key: AUTH_USERNAME
+      - key: SUPABASE_DB_PORT
+        value: "5432"
+      - key: SUPABASE_DB_NAME
         sync: false
-      - key: AUTH_PASSWORD
+      - key: SUPABASE_DB_USER
+        sync: false
+      - key: SUPABASE_DB_PASS
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_JWT_AUD
+        value: authenticated
+      # Restricted app role (NOT postgres) — RLS is silently bypassed by the owner/superuser
+      # connection otherwise (research.md #3 addendum). Same role name as local dev's.
+      - key: SUPABASE_APP_DB_USER
+        sync: false
+      - key: SUPABASE_APP_DB_PASS
         sync: false
       - key: STRIPE_SECRET_KEY
         sync: false
@@ -54,9 +48,6 @@ services:
       - key: STOREFRONT_URL
         sync: false
       - key: CORS_ORIGINS
-        sync: false
-      # Shared parent domain, e.g. .example.com, so the admin cookie is same-site
-      - key: SESSION_COOKIE_DOMAIN
         sync: false
 
   - type: web
@@ -93,4 +84,9 @@ services:
       - key: NODE_VERSION
         value: 22.12.0
       - key: VITE_API_BASE_URL
+        sync: false
+      # Production Supabase project (same project as strawberry-server's SUPABASE_* above)
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
         sync: false

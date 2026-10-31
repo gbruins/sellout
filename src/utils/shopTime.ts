@@ -1,23 +1,24 @@
-// The server stores UTC. The shop is in Los Angeles, so every date and time shown to
-// customers is formatted in that zone, whatever the visitor's device zone is.
-export const SHOP_TIME_ZONE = 'America/Los_Angeles'
+// The server stores UTC. Every date/time shown to customers is formatted in the shop's own
+// tenant timezone (from GET /services/next's `timezone` field — specs/004-multi-tenant-supabase
+// T033), not a fixed zone. This fallback only applies before that response has loaded.
+export const DEFAULT_SHOP_TIME_ZONE = 'America/Los_Angeles'
 
 const toDate = (value: string | Date) => (value instanceof Date ? value : new Date(value))
 
-const format = (value: string | Date, options: Intl.DateTimeFormatOptions) =>
-    new Intl.DateTimeFormat('en-US', { timeZone: SHOP_TIME_ZONE, ...options }).format(toDate(value))
+const format = (value: string | Date, timeZone: string, options: Intl.DateTimeFormatOptions) =>
+    new Intl.DateTimeFormat('en-US', { timeZone, ...options }).format(toDate(value))
 
-export const formatShopDate = (value: string | Date) =>
-    format(value, { weekday: 'long', month: 'long', day: 'numeric' })
+export const formatShopDate = (value: string | Date, timeZone: string = DEFAULT_SHOP_TIME_ZONE) =>
+    format(value, timeZone, { weekday: 'long', month: 'long', day: 'numeric' })
 
-export const formatShopTime = (value: string | Date) =>
-    format(value, { hour: 'numeric', minute: '2-digit' })
+export const formatShopTime = (value: string | Date, timeZone: string = DEFAULT_SHOP_TIME_ZONE) =>
+    format(value, timeZone, { hour: 'numeric', minute: '2-digit' })
 
-export const formatShopZone = (value: string | Date) =>
-    format(value, { timeZoneName: 'short' }).split(' ').pop() as string
+export const formatShopZone = (value: string | Date, timeZone: string = DEFAULT_SHOP_TIME_ZONE) =>
+    format(value, timeZone, { timeZoneName: 'short' }).split(' ').pop() as string
 
-export const formatShopRange = (start: string | Date, end: string | Date) => {
-    const sameDay = formatShopDate(start) === formatShopDate(end)
-    const endPart = sameDay ? formatShopTime(end) : `${formatShopDate(end)}, ${formatShopTime(end)}`
-    return `${formatShopDate(start)}, ${formatShopTime(start)} – ${endPart} ${formatShopZone(end)}`
+export const formatShopRange = (start: string | Date, end: string | Date, timeZone: string = DEFAULT_SHOP_TIME_ZONE) => {
+    const sameDay = formatShopDate(start, timeZone) === formatShopDate(end, timeZone)
+    const endPart = sameDay ? formatShopTime(end, timeZone) : `${formatShopDate(end, timeZone)}, ${formatShopTime(end, timeZone)}`
+    return `${formatShopDate(start, timeZone)}, ${formatShopTime(start, timeZone)} – ${endPart} ${formatShopZone(end, timeZone)}`
 }

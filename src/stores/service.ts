@@ -1,6 +1,7 @@
 import { computed, inject, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { openServiceStream } from '@/utils/serviceStream'
+import { DEFAULT_SHOP_TIME_ZONE } from '@/utils/shopTime'
 
 export type ServiceStatus = 'open' | 'sold_out' | 'upcoming' | 'none'
 
@@ -30,6 +31,7 @@ export interface ServiceMenu {
 export interface ServiceState {
     status: ServiceStatus
     server_now: string
+    timezone: string | null
     service: ServiceWindow | null
     remaining?: number
     menu?: ServiceMenu | null
@@ -40,6 +42,7 @@ export const useServiceStore = defineStore('service', () => {
     const api = inject<Record<string, any>>('$api') // eslint-disable-line @typescript-eslint/no-explicit-any
 
     const status = ref<ServiceStatus | null>(null)
+    const timezone = ref<string>(DEFAULT_SHOP_TIME_ZONE)
     const service = ref<ServiceWindow | null>(null)
     const remaining = ref(0)
     const menu = ref<ServiceMenu | null>(null)
@@ -58,6 +61,7 @@ export const useServiceStore = defineStore('service', () => {
     function apply(state: ServiceState) {
         serverOffsetMs.value = new Date(state.server_now).getTime() - Date.now()
         status.value = state.status
+        timezone.value = state.timezone || DEFAULT_SHOP_TIME_ZONE
         service.value = state.service
         remaining.value = state.remaining ?? 0
         menu.value = state.menu ?? null
@@ -148,5 +152,5 @@ export const useServiceStore = defineStore('service', () => {
         clearBoundaryTimer()
     }
 
-    return { stale, connect, disconnect, receive, status, service, remaining, menu, nextService, loading, error, serverOffsetMs, total, now, apply, load, retry }
+    return { stale, connect, disconnect, receive, status, timezone, service, remaining, menu, nextService, loading, error, serverOffsetMs, total, now, apply, load, retry }
 })

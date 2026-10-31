@@ -33,4 +33,10 @@ describe('shopTime', () => {
         expect(formatShopRange('2026-10-17T05:00:00.000Z', '2026-10-17T08:00:00.000Z'))
             .toBe('Friday, October 16, 10:00 PM – Saturday, October 17, 1:00 AM PDT')
     })
+
+    it('formats in a tenant timezone other than the default (specs/004-multi-tenant-supabase T033)', () => {
+        const t = '2026-07-10T02:30:00.000Z'
+        expect(formatShopTime(t, 'America/New_York')).toBe('10:30 PM')
+        expect(formatShopZone(t, 'America/New_York')).toBe('EDT')
+    })
 })

@@ -1,3 +1,19 @@
+<!--
+Sync Impact Report
+Version change: 1.0.0 → 1.1.0
+Modified principles:
+  - V. Time Is UTC, Displayed in Los Angeles Time → V. Time Is Stored in UTC, Displayed in Each Tenant's Configured Time Zone
+Added sections: none
+Removed sections: none
+Rationale: Multi-tenant Supabase migration (specs/004-multi-tenant-supabase) requires tenants
+able to operate outside Los Angeles. Generalizes the fixed display zone to a per-tenant
+configured zone (defaulting to America/Los_Angeles, preserving today's single-tenant behavior)
+while keeping the "never the visitor's local zone" and UTC-storage rules intact. Classified as
+MINOR: materially expanded guidance, not a backward-incompatible removal — existing single-tenant
+deployments default to the same LA behavior as before.
+Follow-up TODOs: none
+-->
+
 # Sell Out Pizza Constitution
 
 ## Core Principles
@@ -23,9 +39,10 @@ A cart with an open checkout session MUST reject edits.
 The shop does not deliver. Features MUST NOT add delivery addresses, delivery fees or
 street restrictions to the storefront flow unless this principle is amended first.
 
-### V. Time Is UTC, Displayed in Los Angeles Time
-The server MUST store and compare all timestamps in UTC. The storefront and the admin
-MUST display times in the America/Los_Angeles time zone, never the visitor's local zone.
+### V. Time Is Stored in UTC, Displayed in Each Tenant's Configured Time Zone
+The server MUST store and compare all timestamps in UTC. Each tenant has a configured
+display time zone, defaulting to America/Los_Angeles. The storefront and the admin MUST
+display that tenant's times in its configured zone, never the visitor's local zone.
 Display conversion happens in the UIs only.
 
 ### VI. Verify Before Done
@@ -58,4 +75,4 @@ redefined principles, MINOR for new principles or materially expanded guidance, 
 wording. Every plan MUST be checked against these principles, and any exception MUST be
 justified in the plan.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-16 | **Last Amended**: 2026-10-16
+**Version**: 1.1.0 | **Ratified**: 2026-10-16 | **Last Amended**: 2026-10-28

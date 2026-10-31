@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { ServiceWindow } from '@/stores/service'
+import { type ServiceWindow, useServiceStore } from '@/stores/service'
 import { formatShopRange } from '@/utils/shopTime'
 
 const props = defineProps<{ service: ServiceWindow | null, soldOut?: boolean }>()
 
-const range = computed(() => props.service ? formatShopRange(props.service.start_at, props.service.end_at) : '')
+const serviceStore = useServiceStore()
+
+const range = computed(() => props.service ? formatShopRange(props.service.start_at, props.service.end_at, serviceStore.timezone) : '')
 </script>
 
 <template>
