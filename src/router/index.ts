@@ -23,6 +23,11 @@ const router = createRouter({
             name: 'about',
             component: () => import('@/pages/AboutView.vue'),
         },
+        {
+            path: '/unsubscribe',
+            name: 'unsubscribe',
+            component: () => import('@/pages/UnsubscribePage.vue'),
+        },
     ],
 })
 

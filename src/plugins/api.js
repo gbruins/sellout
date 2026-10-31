@@ -4,6 +4,7 @@ import isObject from 'lodash.isobject';
 import Auth from '@/api/auth';
 import Cart from '@/api/cart';
 import Service from '@/api/service';
+import Subscribe from '@/api/subscribe';
 import { getCartCredentials } from '@/utils/cartCredentials';
 import { useCartNoticeStore } from '@/stores/cartNotice';
 
@@ -134,7 +135,8 @@ export default {
         app.provide('$api', {
             auth: Auth(utils, axiosInstance),
             cart: Cart(utils, axiosInstance),
-            service: Service(utils, axiosInstance)
+            service: Service(utils, axiosInstance),
+            subscribe: Subscribe(utils, axiosInstance)
         });
 
         axiosInstance.interceptors.response.use(
