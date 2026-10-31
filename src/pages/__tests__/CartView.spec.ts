@@ -68,7 +68,7 @@ describe('CartView', () => {
         await wrapper.find('[data-test=pay]').trigger('click')
         await flushPromises()
         expect(wrapper.find('[data-test=cart-error]').text()).toContain('"Margherita" is no longer available')
-        expect(wrapper.find('[data-test=cart-line]').classes().join(' ')).toContain('border-red-600')
+        expect(wrapper.find('[data-test=cart-line]').classes().join(' ')).toContain('border-destructive')
         expect(wrapper.find('[data-test=remove]').exists()).toBe(true)
     })
 

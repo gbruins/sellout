@@ -108,7 +108,7 @@ export const useCartStore = defineStore('cart', () => {
         }
     }
 
-    function addPizza(pizza: MenuProduct) {
+    function addPizza(pizza: MenuProduct, qty: number = 1) {
         return run('add', async () => {
             if(!hasCart()) {
                 await api!.cart.create()
@@ -119,10 +119,10 @@ export const useCartStore = defineStore('cart', () => {
 
             const line = cart.value?.cart_items.find((i) => i.product.id === pizza.id)
             if(line) {
-                await api!.cart.updateItem({ id: line.id, qty: line.qty + 1 })
+                await api!.cart.updateItem({ id: line.id, qty: line.qty + qty })
             }
             else {
-                await api!.cart.addItem({ product_id: pizza.id, qty: 1 })
+                await api!.cart.addItem({ product_id: pizza.id, qty })
             }
         })
     }

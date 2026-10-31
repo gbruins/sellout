@@ -11,31 +11,41 @@ import pluginOxlint from 'eslint-plugin-oxlint'
 // More info at https://github.com/vuejs/eslint-config-typescript/#advanced-setup
 
 export default defineConfigWithVueTs(
-  {
-    name: 'app/files-to-lint',
-    files: ['**/*.{vue,ts,mts,tsx}'],
-  },
-
-  globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**']),
-
-  ...pluginVue.configs['flat/essential'],
-  vueTsConfigs.recommended,
-
-  {
-    ...pluginPlaywright.configs['flat/recommended'],
-    files: ['e2e/**/*.{test,spec}.{js,ts,jsx,tsx}'],
-  },
-
-  {
-    ...pluginVitest.configs.recommended,
-    files: ['src/**/__tests__/*'],
-  },
-
-  ...pluginOxlint.buildFromOxlintConfigFile('.oxlintrc.json'),
-  {
-    rules: {
-      indent: ['error', 4, { SwitchCase: 1 }],
-      'vue/html-indent': ['error', 4],
+    {
+        name: 'app/files-to-lint',
+        files: ['**/*.{vue,ts,mts,tsx}'],
     },
-  },
+
+    globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**']),
+
+    ...pluginVue.configs['flat/essential'],
+    vueTsConfigs.recommended,
+
+    {
+        ...pluginPlaywright.configs['flat/recommended'],
+        files: ['e2e/**/*.{test,spec}.{js,ts,jsx,tsx}'],
+    },
+
+    {
+        ...pluginVitest.configs.recommended,
+        files: ['src/**/__tests__/*'],
+    },
+
+    ...pluginOxlint.buildFromOxlintConfigFile('.oxlintrc.json'),
+    {
+        rules: {
+            indent: ['error', 4, { SwitchCase: 1 }],
+            'vue/html-indent': ['error', 4],
+        },
+    },
+
+    // Vendored shadcn-vue primitives (src/components/ui/, via `npx shadcn-vue add`) use the
+    // library's own single-word names (Button.vue, Card.vue, etc.) — not this app's own
+    // components, so not held to its multi-word naming convention.
+    {
+        files: ['src/components/ui/**/*.vue'],
+        rules: {
+            'vue/multi-word-component-names': 'off',
+        },
+    },
 )

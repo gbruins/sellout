@@ -53,14 +53,14 @@ onBeforeUnmount(() => {
 .flip {
   display: inline-block;
   position: relative;
-  width: 5.5rem;
-  height: 8rem;
-  line-height: 8rem;
-  border: solid 1px #000;
-  border-radius: 10px;
-  background: #fff;
-  font-size: 6rem;
-  color: #fff;
+  width: 2.5rem;
+  height: 3.75rem;
+  line-height: 3.75rem;
+  border: solid 1px #171310;
+  border-radius: 6px;
+  background: #2b241d;
+  font-size: 2.5rem;
+  color: #ffffff;
   text-align: center;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-weight: 700;
@@ -68,10 +68,10 @@ onBeforeUnmount(() => {
 
 @media (min-width: 640px) {
   .flip {
-    width: 11rem;
-    height: 13rem;
-    font-size: 9rem;
-    line-height: 13rem;
+    width: 3.75rem;
+    height: 5.5rem;
+    font-size: 3.75rem;
+    line-height: 5.5rem;
   }
 }
 
@@ -81,7 +81,7 @@ onBeforeUnmount(() => {
   position: absolute;
   left: 0;
   right: 0;
-  background: #000;
+  background: #2b241d;
   overflow: hidden;
   box-sizing: border-box;
 }
@@ -89,8 +89,7 @@ onBeforeUnmount(() => {
 .flip .digital:before {
   top: 0;
   bottom: 50%;
-  /* border-radius: 10px 10px 0 0; */
-  border-bottom: solid 1px #666;
+  border-bottom: solid 1px #171310;
 }
 
 .flip .digital:after {

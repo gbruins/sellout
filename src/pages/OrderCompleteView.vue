@@ -22,9 +22,9 @@ onBeforeUnmount(() => service.disconnect());
 </script>
 
 <template>
-    <div>
-        <h1>Thank you for your order!</h1>
-        <p>Your payment was received.</p>
-        <RouterLink to="/">Back to the menu</RouterLink>
-    </div>
+    <section class="mx-auto w-full max-w-2xl px-4 py-16 text-center sm:py-24">
+        <h1 class="font-heading text-3xl font-semibold text-foreground sm:text-4xl">Thank you for your order!</h1>
+        <p class="mt-3 text-muted-foreground">Your payment was received.</p>
+        <RouterLink to="/" class="mt-6 inline-block font-semibold text-primary hover:underline">Back to the menu</RouterLink>
+    </section>
 </template>

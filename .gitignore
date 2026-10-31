@@ -47,3 +47,4 @@ logs
 
 # Misc
 test-results/
+.eslintcache

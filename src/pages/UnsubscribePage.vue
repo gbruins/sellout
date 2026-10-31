@@ -15,14 +15,14 @@ onMounted(() => {
 
 <template>
     <section class="mx-auto w-full max-w-2xl px-4 py-12 text-center sm:py-16">
-        <div class="border border-zinc-800 bg-zinc-900/40 px-4 py-10 sm:px-8">
-            <h1 class="text-2xl font-bold uppercase text-zinc-100 sm:text-3xl">
+        <div class="rounded-lg border border-border bg-card px-4 py-10 sm:px-8">
+            <h1 class="font-heading text-2xl font-semibold text-foreground sm:text-3xl">
                 You're unsubscribed
             </h1>
-            <p role="status" data-test="unsubscribe-confirmation" class="mt-4 text-sm text-zinc-400">
+            <p role="status" data-test="unsubscribe-confirmation" class="mt-4 text-sm text-muted-foreground">
                 You won't receive any more opening alerts from us.
             </p>
-            <RouterLink to="/" class="mt-6 inline-block text-sm text-orange-500">Back to the menu</RouterLink>
+            <RouterLink to="/" class="mt-6 inline-block text-sm font-semibold text-primary hover:underline">Back to the menu</RouterLink>
         </div>
     </section>
 </template>

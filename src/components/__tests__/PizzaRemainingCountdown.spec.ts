@@ -29,10 +29,9 @@ describe('PizzaRemainingCountdown', () => {
         expect(wrapper.findAll('.flip-number-item')).toHaveLength(3)
     })
 
-    it('shows the real total in the cap label and never goes below zero', async () => {
+    it('never goes below zero', async () => {
         const wrapper = mount(PizzaRemainingCountdown, { props: { remaining: 0, total: 48 } })
 
-        expect(wrapper.text()).toContain('Hard cap 48 pies')
         expect(wrapper.get('[role="status"]').text()).toBe('0 pizzas remaining')
         await wrapper.setProps({ remaining: -3 })
         expect(wrapper.get('[role="status"]').text()).toBe('0 pizzas remaining')

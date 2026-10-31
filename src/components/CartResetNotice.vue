@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { useCartNoticeStore } from '@/stores/cartNotice'
+import { Button } from '@/components/ui/button'
 
 const notice = useCartNoticeStore()
 </script>
 
 <template>
-    <div v-if="notice.message" role="status" class="border-b border-orange-700/50 bg-zinc-900 px-4 py-3 text-center text-sm text-zinc-200">
+    <div v-if="notice.message" role="status" class="border-b border-border bg-secondary px-4 py-3 text-center text-sm text-secondary-foreground">
         {{ notice.message }}
-        <button type="button" data-test="dismiss" class="ml-3 text-xs font-semibold uppercase text-orange-500" @click="notice.dismiss()">
+        <Button type="button" data-test="dismiss" variant="link" size="sm" class="ml-2 h-auto p-0 text-primary" @click="notice.dismiss()">
             Dismiss
-        </button>
+        </Button>
     </div>
 </template>
