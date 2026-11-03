@@ -4,8 +4,6 @@ import { describe, expect, it, vi } from 'vitest'
 import CartView from '../CartView.vue'
 import { useCartStore } from '@/stores/cart'
 
-vi.mock('@/utils/serviceStream', () => ({ openServiceStream: vi.fn<() => () => void>(() => vi.fn<() => void>()) }))
-
 const mountCheckout = vi.fn()
 const destroyCheckout = vi.fn()
 vi.mock('@stripe/stripe-js', () => ({

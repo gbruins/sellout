@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { toast } from 'vue-sonner'
 import HomeView from '../HomeView.vue'
 
-vi.mock('@/utils/serviceStream', () => ({ openServiceStream: vi.fn(() => vi.fn()) }))
 vi.mock('vue-sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
 const routerPush = vi.fn()

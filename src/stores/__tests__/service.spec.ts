@@ -2,20 +2,56 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useServiceStore } from '../service'
-import { openServiceStream } from '@/utils/serviceStream'
 
-vi.mock('@/utils/serviceStream', () => ({ openServiceStream: vi.fn(() => vi.fn()) }))
+// A fake Supabase Realtime client standing in for serviceRealtime.ts's getServiceRealtimeClient()
+// — captures the postgres_changes handler and the subscribe() status callback so tests can
+// simulate activity events and connection-state transitions without a real Supabase connection.
+const { fakeClient, getHandlers, getStatusCb, resetFakeRealtime } = vi.hoisted(() => {
+    let handlers: Array<() => void> = []
+    let statusCb: ((status: string) => void) | null = null
 
-const lastHandlers = () => {
-    const calls = vi.mocked(openServiceStream).mock.calls
-    return calls[calls.length - 1]![1]
-}
+    const fakeChannel = {
+        on: (_event: string, _filter: unknown, handler: () => void) => {
+            handlers.push(handler)
+            return fakeChannel
+        },
+        subscribe: (cb: (status: string) => void) => {
+            statusCb = cb
+            return fakeChannel
+        },
+    }
 
-const makeStore = (getNext: () => Promise<unknown>) => {
+    const channel = vi.fn(() => fakeChannel)
+    const removeChannel = vi.fn()
+
+    return {
+        fakeClient: { realtime: { setAuth: vi.fn() }, channel, removeChannel },
+        getHandlers: () => handlers,
+        getStatusCb: () => statusCb,
+        resetFakeRealtime: () => {
+            handlers = []
+            statusCb = null
+            channel.mockClear()
+            removeChannel.mockClear()
+        },
+    }
+})
+
+vi.mock('@/plugins/serviceRealtime', () => ({ getServiceRealtimeClient: () => fakeClient }))
+
+const triggerActivity = () => getHandlers().forEach((h) => h())
+const triggerStatus = (status: string) => getStatusCb()?.(status)
+
+const makeStore = (getNext: () => Promise<unknown>, getRealtimeToken?: () => Promise<unknown>) => {
     const app = createApp({})
     const pinia = createPinia()
     app.use(pinia)
-    app.provide('$api', { service: { getNext } })
+    app.provide('$api', {
+        service: {
+            getNext,
+            getRealtimeToken: getRealtimeToken ?? (async () => ({ realtime_jwt: 'test-jwt', tenant_id: 't1' })),
+        },
+    })
     return app.runWithContext(() => useServiceStore())
 }
 
@@ -74,43 +110,74 @@ describe('service store', () => {
         expect(store.status).toBe('none')
     })
 
-    describe('live stream', () => {
+    describe('realtime updates', () => {
+        afterEach(() => resetFakeRealtime())
+
         const openState = (remaining: number) => ({
             status: 'open' as const, server_now: new Date().toISOString(), timezone: 'America/Los_Angeles', service: window, remaining,
             menu: null, next_service: null,
         })
 
-        it('applies pushed state', async () => {
-            const store = makeStore(async () => openState(41))
+        it('refetches and applies the new state on a realtime activity signal', async () => {
+            const getNext = vi.fn()
+                .mockResolvedValueOnce(openState(41))
+                .mockResolvedValueOnce(openState(40))
+            const store = makeStore(getNext)
             await store.load()
             store.connect()
-            lastHandlers().onState(openState(40))
+            await vi.waitFor(() => { if (!getStatusCb()) throw new Error('not subscribed yet') })
+            triggerStatus('SUBSCRIBED')
+            expect(store.stale).toBe(false)
+
+            triggerActivity()
+            await vi.waitFor(() => expect(store.remaining).toBe(40))
+            store.disconnect()
+        })
+
+        it('marks stale when the channel drops, but polling keeps the data correct', async () => {
+            const getNext = vi.fn()
+                .mockResolvedValueOnce(openState(41))
+                .mockResolvedValueOnce(openState(33))
+            const store = makeStore(getNext)
+            await store.load()
+            store.connect()
+            await vi.waitFor(() => { if (!getStatusCb()) throw new Error('not subscribed yet') })
+            triggerStatus('SUBSCRIBED')
+            expect(store.stale).toBe(false)
+
+            triggerStatus('CHANNEL_ERROR')
+            expect(store.stale).toBe(true)
+            await vi.waitFor(() => expect(store.remaining).toBe(33))
+            store.disconnect()
+        })
+
+        it('only subscribes once and tears the channel down on disconnect', async () => {
+            const getNext = vi.fn().mockResolvedValue(openState(1))
+            const store = makeStore(getNext)
+            await store.load()
+            store.connect()
+            store.connect()
+            await vi.waitFor(() => { if (!getStatusCb()) throw new Error('not subscribed yet') })
+            expect(fakeClient.channel).toHaveBeenCalledTimes(1)
+            store.disconnect()
+            expect(fakeClient.removeChannel).toHaveBeenCalledTimes(1)
+        })
+
+        it('falls back to polling when no realtime token is available', async () => {
+            vi.useFakeTimers()
+            const getNext = vi.fn()
+                .mockResolvedValueOnce(openState(41))
+                .mockResolvedValueOnce(openState(40))
+            const store = makeStore(getNext, async () => ({ realtime_jwt: null, tenant_id: null }))
+            await store.load()
+            store.connect()
+            await vi.advanceTimersByTimeAsync(0)
+            // Silent degradation, not an error — no realtime JWT just means never-upgraded,
+            // not "a live connection dropped" (see startPolling's markStale parameter).
+            expect(store.stale).toBe(false)
+            await vi.advanceTimersByTimeAsync(5000)
             expect(store.remaining).toBe(40)
             store.disconnect()
-        })
-
-        it('marks stale on disconnect and shows the current count after reconnect', async () => {
-            const store = makeStore(async () => openState(41))
-            await store.load()
-            store.connect()
-            lastHandlers().onDisconnected?.()
-            expect(store.stale).toBe(true)
-            lastHandlers().onState(openState(33))
-            expect(store.stale).toBe(false)
-            expect(store.remaining).toBe(33)
-            store.disconnect()
-        })
-
-        it('only opens one stream and closes it on disconnect', async () => {
-            const stop = vi.fn()
-            vi.mocked(openServiceStream).mockReturnValueOnce(stop)
-            const store = makeStore(async () => openState(1))
-            const before = vi.mocked(openServiceStream).mock.calls.length
-            store.connect()
-            store.connect()
-            expect(vi.mocked(openServiceStream).mock.calls.length - before).toBe(1)
-            store.disconnect()
-            expect(stop).toHaveBeenCalled()
         })
 
         it('refetches at the start boundary and moves from upcoming to open', async () => {
@@ -123,6 +190,7 @@ describe('service store', () => {
             const store = makeStore(getNext)
             await store.load()
             store.connect()
+            await vi.advanceTimersByTimeAsync(0)
             expect(store.status).toBe('upcoming')
             await vi.advanceTimersByTimeAsync(61_000)
             expect(getNext).toHaveBeenCalledTimes(2)
@@ -140,6 +208,7 @@ describe('service store', () => {
             const store = makeStore(getNext)
             await store.load()
             store.connect()
+            await vi.advanceTimersByTimeAsync(0)
             await vi.advanceTimersByTimeAsync(61_000)
             expect(store.status).toBe('upcoming')
             expect(store.service?.id).toBe('s2')
