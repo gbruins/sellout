@@ -122,12 +122,20 @@ describe('CartView', () => {
         expect(wrapper.find('[data-test=note-count]').text()).toContain('/ 500')
     })
 
-    it('hides the note section and item controls when locked', async () => {
+    it('hides item controls but keeps the note editable when locked', async () => {
         const checkout = vi.fn<Fn>(async () => ({ data: { client_secret: 'cs_test_x_secret_y' } }))
-        const { wrapper } = mountView({ get: async () => ({ data: cartData({ checkout_in_progress: true }) }), checkout })
+        const setCustomerNote = vi.fn<Fn>(async () => ({}))
+        const { wrapper } = mountView({ get: async () => ({ data: cartData({ checkout_in_progress: true }) }), checkout, setCustomerNote })
         await flushPromises()
-        expect(wrapper.find('[data-test=note]').exists()).toBe(false)
         expect(wrapper.find('[data-test=plus]').exists()).toBe(false)
-        expect(wrapper.find('[data-test=note-save]').exists()).toBe(false)
+
+        // Kept reachable even when the visitor arrives already locked (e.g. resuming a checkout
+        // from an earlier visit) and never saw the unlocked view.
+        const note = wrapper.find('[data-test=note]')
+        expect(note.exists()).toBe(true)
+        expect(wrapper.find('[data-test=note-save]').exists()).toBe(true)
+        await note.setValue('extra crispy please')
+        await note.trigger('blur'); await flushPromises()
+        expect(setCustomerNote).toHaveBeenCalledWith('extra crispy please')
     })
 })

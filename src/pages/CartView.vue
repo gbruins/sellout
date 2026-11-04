@@ -20,7 +20,7 @@ let checkoutInstance: StripeEmbeddedCheckout | null = null
 watch(() => cart.cart?.customer_note, (note) => { noteDraft.value = note ?? '' }, { immediate: true })
 
 function saveNote() {
-    if(cart.locked || noteDraft.value.length > NOTE_MAX || noteDraft.value.trim() === (cart.cart?.customer_note ?? '')) {
+    if(noteDraft.value.length > NOTE_MAX || noteDraft.value.trim() === (cart.cart?.customer_note ?? '')) {
         return
     }
     cart.saveNote(noteDraft.value)
@@ -133,9 +133,11 @@ async function cancelPayment() {
                 />
             </ul>
 
-            <!-- Same reasoning as the item list above: once locked, editing is over and the
-                 note was already saved, so there's nothing left here the payment step needs. -->
-            <div v-if="!cart.locked" class="mt-4">
+            <!-- Kept visible (and editable — the backend places no restriction on it) even once
+                 locked: a visitor can reach this page already locked, e.g. resuming a checkout
+                 from an earlier visit, without ever having seen the unlocked view where this
+                 would otherwise be their only chance to leave a note. -->
+            <div class="mt-4">
                 <label for="customer-note" class="mb-1 block text-xs font-semibold uppercase text-muted-foreground">Note for the kitchen</label>
                 <textarea
                     id="customer-note"
