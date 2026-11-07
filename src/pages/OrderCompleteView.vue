@@ -1,133 +1,75 @@
 <script setup lang="ts">
-import { inject, onBeforeUnmount, onMounted, ref } from 'vue';
-import { useCartStore } from '@/stores/cart';
-import { useServiceStore } from '@/stores/service';
+import { RouterLink, useRoute } from 'vue-router'
+import { useOrderConfirmation } from '@/composables/useOrderConfirmation'
+import { usePrice } from '@/composables/usePrice'
+import PickupInfo from '@/components/PickupInfo.vue'
+import { Button } from '@/components/ui/button'
 
-interface ConfirmedCart {
-    closed_at: string | null
-    pickup_code: number | null
-    billing_email: string | null
-}
+// Stripe returns the customer here with ?session_id=… (see strawberry-server CheckoutService)
+const route = useRoute()
+const sessionId = typeof route.query.session_id === 'string' ? route.query.session_id : null
 
-interface OrderCompleteApi {
-    cart: {
-        get: () => Promise<{ data: ConfirmedCart }>,
-        credentials: () => { id: string | null },
-        forget: () => void
-    }
-}
-
-const $api = inject<OrderCompleteApi>('$api');
-
-const cart = useCartStore();
-// The header badge reads the service state, so this page has to load it too (FR-013).
-const service = useServiceStore();
-
-const status = ref<'confirming' | 'ready' | 'timeout'>('confirming');
-const pickupCode = ref<number | null>(null);
-const billingEmail = ref<string | null>(null);
-
-const POLL_INTERVAL_MS = 1500;
-const POLL_TIMEOUT_MS = 20000;
-
-let pollTimer: ReturnType<typeof setTimeout> | null = null;
-let stopped = false;
-
-// The cart is closed by the server once Stripe confirms payment, so the browser's cart
-// credentials are no longer useful — but not until the pickup code has actually been shown.
-function finish() {
-    stopped = true;
-
-    if(pollTimer !== null) {
-        clearTimeout(pollTimer);
-        pollTimer = null;
-    }
-
-    $api?.cart.forget();
-    cart.reset();
-}
-
-// Stripe's webhook that closes the cart (and allocates the pickup code) runs async relative to
-// this redirect, so the cart may still be open on first load. There's no other polling pattern
-// in this app — this is deliberately scoped to just this page, with a short timeout so a
-// delayed/failed webhook doesn't block the page indefinitely.
-async function poll(deadline: number) {
-    if(stopped) {
-        return;
-    }
-
-    try {
-        const { data } = await $api!.cart.get();
-
-        if(data.closed_at && data.pickup_code) {
-            pickupCode.value = data.pickup_code;
-            billingEmail.value = data.billing_email;
-            status.value = 'ready';
-            finish();
-            return;
-        }
-    }
-    catch {
-        // Keep polling — a transient error here shouldn't abandon the attempt to show the code
-    }
-
-    if(Date.now() >= deadline) {
-        status.value = 'timeout';
-        finish();
-        return;
-    }
-
-    pollTimer = setTimeout(() => poll(deadline), POLL_INTERVAL_MS);
-}
-
-onMounted(() => {
-    service.load();
-    service.connect();
-
-    if($api?.cart.credentials().id) {
-        poll(Date.now() + POLL_TIMEOUT_MS);
-    }
-    else {
-        // Nothing to poll for (e.g. this page was reached directly, with no cart credentials)
-        status.value = 'timeout';
-        finish();
-    }
-});
-
-onBeforeUnmount(() => {
-    stopped = true;
-
-    if(pollTimer !== null) {
-        clearTimeout(pollTimer);
-    }
-
-    service.disconnect();
-});
+const { state, order, checkAgain } = useOrderConfirmation(sessionId)
+const { formatPrice } = usePrice()
 </script>
 
 <template>
     <section class="mx-auto w-full max-w-2xl px-4 py-16 text-center sm:py-24">
-        <template v-if="status === 'ready'">
-            <h1 class="font-heading text-3xl font-semibold text-foreground sm:text-4xl">Thank you for your order!</h1>
-            <p class="mt-3 text-muted-foreground">Your payment was received.</p>
+        <template v-if="state === 'complete' && order">
+            <h1 class="font-heading text-3xl font-semibold text-foreground sm:text-4xl">{{ $t('order.thanks') }}</h1>
+            <p class="mt-3 text-muted-foreground">{{ $t('order.paid') }}</p>
 
-            <p class="mt-8 text-sm font-medium uppercase tracking-wide text-muted-foreground">Your pickup code</p>
-            <p class="mt-2 font-heading text-7xl font-bold tracking-widest text-foreground sm:text-8xl">{{ pickupCode }}</p>
-            <p class="mt-3 text-muted-foreground">Give this number to our staff when you arrive.</p>
+            <p class="mt-8 text-sm font-medium uppercase tracking-wide text-muted-foreground">{{ $t('order.codeLabel') }}</p>
+            <p data-test="pickup-code" class="mt-2 font-heading text-7xl font-bold tracking-widest text-foreground sm:text-8xl">{{ order.pickup_code }}</p>
+            <p class="mt-3 text-muted-foreground">{{ $t('order.codeHint') }}</p>
 
-            <p v-if="billingEmail" class="mt-6 text-sm text-muted-foreground">A receipt was sent to {{ billingEmail }}.</p>
+            <div class="mx-auto mt-8 max-w-sm text-left">
+                <PickupInfo class="mb-6 rounded-lg border border-border bg-card p-4" />
+
+                <h2 class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ $t('order.summary') }}</h2>
+                <ul data-test="order-items" class="divide-y divide-border rounded-lg border border-border bg-card text-sm">
+                    <li v-for="item in order.items" :key="item.id" class="flex justify-between gap-3 px-4 py-3">
+                        <span>{{ $t('order.line', { qty: item.qty, title: item.title }) }}</span>
+                        <span class="font-semibold">{{ formatPrice(item.price_subtotal) }}</span>
+                    </li>
+                </ul>
+                <dl class="mt-3 space-y-1 px-4 text-sm">
+                    <div v-if="order.sales_tax" class="flex justify-between text-muted-foreground">
+                        <dt>{{ $t('order.subtotal') }}</dt>
+                        <dd>{{ formatPrice(order.price_subtotal) }}</dd>
+                    </div>
+                    <div v-if="order.sales_tax" class="flex justify-between text-muted-foreground">
+                        <dt>{{ $t('order.tax') }}</dt>
+                        <dd>{{ formatPrice(order.sales_tax) }}</dd>
+                    </div>
+                    <div class="flex justify-between font-semibold text-foreground">
+                        <dt>{{ $t('order.total') }}</dt>
+                        <dd data-test="order-total">{{ formatPrice(order.grand_total) }}</dd>
+                    </div>
+                </dl>
+            </div>
+
+            <p v-if="order.billing_email" class="mt-6 text-sm text-muted-foreground">{{ $t('order.receipt', { email: order.billing_email }) }}</p>
         </template>
 
-        <template v-else-if="status === 'confirming'">
-            <h1 class="font-heading text-3xl font-semibold text-foreground sm:text-4xl">Confirming your order...</h1>
-            <p class="mt-3 text-muted-foreground">This only takes a moment.</p>
+        <template v-else-if="state === 'confirming'">
+            <h1 class="font-heading text-3xl font-semibold text-foreground sm:text-4xl" role="status">{{ $t('order.confirmingTitle') }}</h1>
+            <p class="mt-3 text-muted-foreground">{{ $t('order.confirmingBody') }}</p>
+        </template>
+
+        <template v-else-if="state === 'slow'">
+            <h1 class="font-heading text-3xl font-semibold text-foreground sm:text-4xl" role="status">{{ $t('order.slowTitle') }}</h1>
+            <p class="mt-3 text-muted-foreground">{{ $t('order.slowBody') }}</p>
+            <Button type="button" variant="outline" class="mt-6 h-11" data-test="check-again" @click="checkAgain">
+                {{ $t('order.checkAgain') }}
+            </Button>
         </template>
 
         <template v-else>
-            <h1 class="font-heading text-3xl font-semibold text-foreground sm:text-4xl">Thank you for your order!</h1>
-            <p class="mt-3 text-muted-foreground">Your payment was received.</p>
+            <h1 class="font-heading text-3xl font-semibold text-foreground sm:text-4xl">{{ $t('order.missingTitle') }}</h1>
+            <p class="mt-3 text-muted-foreground">{{ $t('order.missingBody') }}</p>
         </template>
 
-        <RouterLink to="/" class="mt-6 inline-block font-semibold text-primary hover:underline">Back to the menu</RouterLink>
+        <RouterLink to="/" class="mt-8 block font-semibold text-primary hover:underline">{{ $t('nav.backToMenu') }}</RouterLink>
     </section>
 </template>

@@ -3,8 +3,8 @@ import { mount } from '@vue/test-utils'
 import PizzaRemainingCountdown from '../PizzaRemainingCountdown.vue'
 
 describe('PizzaRemainingCountdown', () => {
-    it('shows the default remaining count accessibly', () => {
-        const wrapper = mount(PizzaRemainingCountdown)
+    it('shows the remaining count accessibly', () => {
+        const wrapper = mount(PizzaRemainingCountdown, { props: { remaining: 14 } })
 
         expect(wrapper.get('[role="status"]').text()).toBe('14 pizzas remaining')
         expect(wrapper.findAll('.flip-number-item')).toHaveLength(2)
@@ -30,10 +30,12 @@ describe('PizzaRemainingCountdown', () => {
     })
 
     it('never goes below zero', async () => {
-        const wrapper = mount(PizzaRemainingCountdown, { props: { remaining: 0, total: 48 } })
+        const wrapper = mount(PizzaRemainingCountdown, { props: { remaining: 0 } })
 
         expect(wrapper.get('[role="status"]').text()).toBe('0 pizzas remaining')
         await wrapper.setProps({ remaining: -3 })
         expect(wrapper.get('[role="status"]').text()).toBe('0 pizzas remaining')
+        await wrapper.setProps({ remaining: 1 })
+        expect(wrapper.get('[role="status"]').text()).toBe('1 pizza remaining')
     })
 })

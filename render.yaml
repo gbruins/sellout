@@ -45,6 +45,11 @@ services:
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
+      # Requires Stripe Tax to be activated and an origin address registered in the
+      # Stripe Dashboard first, or automatic_tax silently calculates nothing (see
+      # strawberry-server/README.md and CheckoutService.js's use of this flag).
+      - key: STRIPE_AUTOMATIC_TAX
+        value: "true"
       - key: STOREFRONT_URL
         sync: false
       - key: CORS_ORIGINS

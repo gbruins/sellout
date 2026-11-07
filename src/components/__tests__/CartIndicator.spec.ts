@@ -11,7 +11,6 @@ const mountIndicator = () => {
         global: {
             plugins: [pinia],
             stubs: { RouterLink: true },
-            provide: { $api: { cart: { credentials: () => ({ id: null }) } } },
         },
     })
     return { wrapper, pinia }
@@ -45,5 +44,18 @@ describe('CartIndicator', () => {
         }
         await wrapper.vm.$nextTick()
         expect(wrapper.find('[data-test="cart-indicator"]').exists()).toBe(true)
+    })
+})
+
+describe('CartIndicator label', () => {
+    it('announces the count with a pluralized label', async () => {
+        const { wrapper, pinia } = mountIndicator()
+        expect(wrapper.get('[data-test="cart-indicator"]').attributes('aria-label')).toBe('Cart, no pizzas')
+        useCartStore(pinia).cart = {
+            id: 'c1', num_items: 1, price_subtotal: 2000, grand_total: 2000,
+            customer_note: null, checkout_in_progress: false, cart_items: [],
+        }
+        await wrapper.vm.$nextTick()
+        expect(wrapper.get('[data-test="cart-indicator"]').attributes('aria-label')).toBe('Cart, 1 pizza')
     })
 })

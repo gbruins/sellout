@@ -1,7 +1,7 @@
-import { createApp } from 'vue'
-import { createPinia } from 'pinia'
+import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useServiceStore } from '../service'
+import { stubApi } from '@/test/stubApi'
 
 // A fake Supabase Realtime client standing in for serviceRealtime.ts's getServiceRealtimeClient()
 // — captures the postgres_changes handler and the subscribe() status callback so tests can
@@ -21,11 +21,11 @@ const { fakeClient, getHandlers, getStatusCb, resetFakeRealtime } = vi.hoisted((
         },
     }
 
-    const channel = vi.fn(() => fakeChannel)
-    const removeChannel = vi.fn()
+    const channel = vi.fn<(...args: never[]) => unknown>(() => fakeChannel)
+    const removeChannel = vi.fn<(...args: never[]) => unknown>()
 
     return {
-        fakeClient: { realtime: { setAuth: vi.fn() }, channel, removeChannel },
+        fakeClient: { realtime: { setAuth: vi.fn<(...args: never[]) => unknown>() }, channel, removeChannel },
         getHandlers: () => handlers,
         getStatusCb: () => statusCb,
         resetFakeRealtime: () => {
@@ -43,16 +43,14 @@ const triggerActivity = () => getHandlers().forEach((h) => h())
 const triggerStatus = (status: string) => getStatusCb()?.(status)
 
 const makeStore = (getNext: () => Promise<unknown>, getRealtimeToken?: () => Promise<unknown>) => {
-    const app = createApp({})
-    const pinia = createPinia()
-    app.use(pinia)
-    app.provide('$api', {
+    setActivePinia(createPinia())
+    stubApi({
         service: {
             getNext,
             getRealtimeToken: getRealtimeToken ?? (async () => ({ realtime_jwt: 'test-jwt', tenant_id: 't1' })),
         },
     })
-    return app.runWithContext(() => useServiceStore())
+    return useServiceStore()
 }
 
 const window = {
@@ -99,7 +97,7 @@ describe('service store', () => {
     })
 
     it('sets error on failure and recovers on retry', async () => {
-        const getNext = vi.fn()
+        const getNext = vi.fn<(...args: never[]) => Promise<unknown>>()
             .mockRejectedValueOnce(new Error('down'))
             .mockResolvedValueOnce({ status: 'none', server_now: new Date().toISOString(), service: null, next_service: null })
         const store = makeStore(getNext)
@@ -119,7 +117,7 @@ describe('service store', () => {
         })
 
         it('refetches and applies the new state on a realtime activity signal', async () => {
-            const getNext = vi.fn()
+            const getNext = vi.fn<(...args: never[]) => Promise<unknown>>()
                 .mockResolvedValueOnce(openState(41))
                 .mockResolvedValueOnce(openState(40))
             const store = makeStore(getNext)
@@ -135,7 +133,7 @@ describe('service store', () => {
         })
 
         it('marks stale when the channel drops, but polling keeps the data correct', async () => {
-            const getNext = vi.fn()
+            const getNext = vi.fn<(...args: never[]) => Promise<unknown>>()
                 .mockResolvedValueOnce(openState(41))
                 .mockResolvedValueOnce(openState(33))
             const store = makeStore(getNext)
@@ -152,7 +150,7 @@ describe('service store', () => {
         })
 
         it('only subscribes once and tears the channel down on disconnect', async () => {
-            const getNext = vi.fn().mockResolvedValue(openState(1))
+            const getNext = vi.fn<(...args: never[]) => Promise<unknown>>().mockResolvedValue(openState(1))
             const store = makeStore(getNext)
             await store.load()
             store.connect()
@@ -165,7 +163,7 @@ describe('service store', () => {
 
         it('falls back to polling when no realtime token is available', async () => {
             vi.useFakeTimers()
-            const getNext = vi.fn()
+            const getNext = vi.fn<(...args: never[]) => Promise<unknown>>()
                 .mockResolvedValueOnce(openState(41))
                 .mockResolvedValueOnce(openState(40))
             const store = makeStore(getNext, async () => ({ realtime_jwt: null, tenant_id: null }))
@@ -184,7 +182,7 @@ describe('service store', () => {
             vi.useFakeTimers()
             vi.setSystemTime(new Date('2026-10-17T18:59:00.000Z'))
             const upcoming = { status: 'upcoming' as const, server_now: '2026-10-17T18:59:00.000Z', service: window, next_service: null }
-            const getNext = vi.fn()
+            const getNext = vi.fn<(...args: never[]) => Promise<unknown>>()
                 .mockResolvedValueOnce(upcoming)
                 .mockResolvedValueOnce({ ...openState(60), server_now: '2026-10-17T19:00:01.000Z' })
             const store = makeStore(getNext)
@@ -202,7 +200,7 @@ describe('service store', () => {
             vi.useFakeTimers()
             vi.setSystemTime(new Date('2026-10-18T01:59:00.000Z'))
             const next = { ...window, id: 's2', start_at: '2026-10-19T19:00:00.000Z', end_at: '2026-10-20T02:00:00.000Z' }
-            const getNext = vi.fn()
+            const getNext = vi.fn<(...args: never[]) => Promise<unknown>>()
                 .mockResolvedValueOnce({ ...openState(5), server_now: '2026-10-18T01:59:00.000Z' })
                 .mockResolvedValueOnce({ status: 'upcoming', server_now: '2026-10-18T02:00:01.000Z', service: next, next_service: null })
             const store = makeStore(getNext)

@@ -2,49 +2,45 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import { describe, expect, it, vi } from 'vitest'
 import UnsubscribePage from '../UnsubscribePage.vue'
+import { stubApi } from '@/test/stubApi'
+
+const mountAt = async (url: string, unsubscribe: (token: string) => Promise<unknown>) => {
+    stubApi({ subscribe: { unsubscribe } })
+    const router = createRouter({
+        history: createMemoryHistory(),
+        routes: [
+            { path: '/unsubscribe', component: UnsubscribePage },
+            { path: '/', component: { template: '<div />' } },
+        ],
+    })
+    router.push(url)
+    await router.isReady()
+    const wrapper = mount(UnsubscribePage, { global: { plugins: [router] } })
+    await flushPromises()
+    return wrapper
+}
 
 describe('UnsubscribePage', () => {
-    it('fires the unsubscribe call with the token from the URL on mount and renders the confirmation', async () => {
-        const unsubscribe = vi.fn<(token: string) => Promise<unknown>>(async () => ({ unsubscribed: true }))
-        const router = createRouter({
-            history: createMemoryHistory(),
-            routes: [{ path: '/unsubscribe', name: 'unsubscribe', component: UnsubscribePage }],
-        })
-        router.push('/unsubscribe?token=some-real-token')
-        await router.isReady()
-
-        const wrapper = mount(UnsubscribePage, {
-            global: {
-                plugins: [router],
-                provide: { $api: { subscribe: { unsubscribe } } },
-            },
-        })
-        await flushPromises()
+    it('unsubscribes with the token from the URL and confirms it', async () => {
+        const unsubscribe = vi.fn<(value: string) => Promise<unknown>>(async () => ({ unsubscribed: true }))
+        const wrapper = await mountAt('/unsubscribe?token=some-real-token', unsubscribe)
 
         expect(unsubscribe).toHaveBeenCalledWith('some-real-token')
-        expect(wrapper.get('[data-test="unsubscribe-confirmation"]').text()).toContain("won't receive any more")
-        wrapper.unmount()
+        expect(wrapper.get('[data-test="unsubscribe-title"]').text()).toBe("You're unsubscribed")
+        expect(wrapper.get('[data-test="unsubscribe-body"]').text()).toContain("won't receive any more")
     })
 
-    it('still renders the confirmation even with no token in the URL', async () => {
-        const unsubscribe = vi.fn<(token: string) => Promise<unknown>>(async () => ({ unsubscribed: true }))
-        const router = createRouter({
-            history: createMemoryHistory(),
-            routes: [{ path: '/unsubscribe', name: 'unsubscribe', component: UnsubscribePage }],
-        })
-        router.push('/unsubscribe')
-        await router.isReady()
+    it('says so when the request fails, instead of claiming success', async () => {
+        const wrapper = await mountAt('/unsubscribe?token=bad', async () => { throw new Error('400') })
 
-        const wrapper = mount(UnsubscribePage, {
-            global: {
-                plugins: [router],
-                provide: { $api: { subscribe: { unsubscribe } } },
-            },
-        })
-        await flushPromises()
+        expect(wrapper.get('[data-test="unsubscribe-title"]').text()).toBe("We couldn't unsubscribe you")
+    })
+
+    it('explains an incomplete link and never calls the API', async () => {
+        const unsubscribe = vi.fn<(value: string) => Promise<unknown>>(async () => ({}))
+        const wrapper = await mountAt('/unsubscribe', unsubscribe)
 
         expect(unsubscribe).not.toHaveBeenCalled()
-        expect(wrapper.get('[data-test="unsubscribe-confirmation"]').exists()).toBe(true)
-        wrapper.unmount()
+        expect(wrapper.get('[data-test="unsubscribe-title"]').text()).toBe('This unsubscribe link is incomplete')
     })
 })
