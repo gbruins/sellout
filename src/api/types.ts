@@ -21,6 +21,13 @@ export interface MenuProduct {
     description: string | null
     base_price: number | null
     image?: string | null
+    // Counts toward the service's max_per_order and stock (true for pizzas). Missing means limited.
+    limited?: boolean
+    // The product type's value and name; the menu is shown in one section per type
+    product_type?: number
+    type_name?: string | null
+    // False when out of stock for this service: shown, but can't be ordered. Missing means available.
+    available?: boolean
 }
 
 export interface ServiceMenu {

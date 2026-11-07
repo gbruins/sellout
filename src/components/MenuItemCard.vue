@@ -4,6 +4,7 @@ import { Loader2Icon, ShoppingCartIcon } from '@lucide/vue'
 import type { MenuProduct } from '@/api'
 import { usePrice } from '@/composables/usePrice'
 import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { NumberField, NumberFieldContent, NumberFieldDecrement, NumberFieldIncrement, NumberFieldInput } from '@/components/ui/number-field'
 
@@ -14,6 +15,10 @@ const props = defineProps<{
     disabled?: boolean
     // This card's own order is in flight (others are only disabled)
     adding?: boolean
+    // Out of stock for this service: still shown, but can't be ordered
+    unavailable?: boolean
+    // h4 when the card sits under a product type heading
+    headingTag?: 'h3' | 'h4'
 }>()
 
 const emit = defineEmits<{ order: [qty: number] }>()
@@ -21,6 +26,7 @@ const emit = defineEmits<{ order: [qty: number] }>()
 const { formatPrice } = usePrice()
 
 const qty = ref(1)
+const isDisabled = computed(() => props.disabled || props.unavailable)
 const clampedQty = computed(() => Math.min(Math.max(qty.value, 1), props.maxQty))
 
 function order() {
@@ -41,9 +47,14 @@ function order() {
         >
         <CardContent class="flex h-full flex-col" :class="{ 'pt-6': !product.image }">
             <div class="flex items-start justify-between gap-3">
-                <h3 class="font-heading text-lg font-semibold text-foreground">
-                    {{ product.title }}
-                </h3>
+                <div>
+                    <component :is="headingTag ?? 'h3'" class="font-heading text-lg font-semibold text-foreground">
+                        {{ product.title }}
+                    </component>
+                    <Badge v-if="unavailable" variant="destructive" class="mt-1" data-test="out-of-stock">
+                        {{ $t('menu.outOfStock') }}
+                    </Badge>
+                </div>
                 <p class="shrink-0 font-heading text-lg font-semibold text-primary" data-test="price">{{ formatPrice(product.base_price) }}</p>
             </div>
 
@@ -56,7 +67,7 @@ function order() {
                     :model-value="clampedQty"
                     :min="1"
                     :max="maxQty"
-                    :disabled="disabled"
+                    :disabled="isDisabled"
                     class="w-28 shrink-0"
                     @update:model-value="(val) => { if (val) qty = val }"
                 >
@@ -71,14 +82,17 @@ function order() {
                     type="button"
                     data-test="order"
                     class="h-11 flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
-                    :disabled="disabled"
+                    :disabled="isDisabled"
                     :aria-busy="adding"
-                    :aria-label="$t('menu.orderItem', { title: product.title })"
+                    :aria-label="unavailable ? $t('menu.outOfStockItem', { title: product.title }) : $t('menu.orderItem', { title: product.title })"
                     @click="order"
                 >
                     <template v-if="adding">
                         <Loader2Icon class="size-4 animate-spin" aria-hidden="true" />
                         {{ $t('menu.adding') }}
+                    </template>
+                    <template v-else-if="unavailable">
+                        {{ $t('menu.outOfStock') }}
                     </template>
                     <template v-else>
                         {{ $t('menu.order') }}
