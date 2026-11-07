@@ -8,13 +8,8 @@ export default {
             const appStore = useAppStore();
 
             try {
-                const response = await Promise.all([
-                    axiosInstance.get('/allowed_streets'),
-                    axiosInstance.get('/product_types')
-                ]);
-
-                appStore.allowedStreets = response[0].data?.data || [];
-                appStore.productTypes = response[1].data?.data || [];
+                const response = await axiosInstance.get('/product_types');
+                appStore.productTypes = response.data?.data || [];
             }
             catch (error) {
                 console.error('Failed to fetch config:', error);
