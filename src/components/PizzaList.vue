@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { MenuProduct, ServiceMenu } from '@/api'
-import MenuItemCard from './MenuItemCard.vue'
+import { groupMenuProducts, isLimited } from '@/utils/menuSections'
+import MenuSection from './MenuSection.vue'
 
 const props = defineProps<{
     menu: ServiceMenu | null
@@ -12,11 +13,23 @@ const props = defineProps<{
     addingId?: string | null
 }>()
 
-const emit = defineEmits<{ order: [pizza: MenuProduct, qty: number] }>()
+const emit = defineEmits<{ order: [product: MenuProduct, qty: number] }>()
+
+// The stepper's ceiling when nothing tighter applies
+const UNLIMITED_QTY = 20
 
 // Mirrors the server's own over_limit calculation, so the stepper can never be pushed past
-// what the server would reject anyway
-const maxQty = computed(() => Math.max(1, Math.min(props.maxPerOrder ?? 20, props.remaining ?? 20)))
+// what the server would reject anyway. Only pizzas (`limited`) count toward the cap and stock.
+const limitedMaxQty = computed(() => Math.max(1, Math.min(props.maxPerOrder ?? UNLIMITED_QTY, props.remaining ?? UNLIMITED_QTY)))
+const maxQtyFor = (product: MenuProduct) => isLimited(product) ? limitedMaxQty.value : UNLIMITED_QTY
+
+// One section per product type, in menu order. A single section is shown without a heading,
+// exactly like a plain list.
+const sections = computed(() => groupMenuProducts(props.menu?.products ?? []))
+const titled = computed(() => sections.value.length > 1)
+
+// With one section the per-order note sits in the page header; otherwise on the Pizza heading
+const headerNote = computed(() => !titled.value && !!props.maxPerOrder && sections.value.some((s) => s.limited))
 </script>
 
 <template>
@@ -25,25 +38,27 @@ const maxQty = computed(() => Math.max(1, Math.min(props.maxPerOrder ?? 20, prop
             <h2 id="pizza-list-title" class="font-heading text-2xl font-semibold text-foreground sm:text-3xl">
                 {{ $t('menu.title') }}
             </h2>
-            <p v-if="maxPerOrder" class="shrink-0 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                {{ $t('menu.maxPerOrder', { n: maxPerOrder }) }}
+            <p v-if="headerNote && maxPerOrder" data-test="max-per-order" class="shrink-0 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {{ $t('menu.maxPerOrder', { n: maxPerOrder }, maxPerOrder) }}
             </p>
         </div>
 
-        <p v-if="!menu || !menu.products.length" data-test="no-menu" class="rounded-lg border border-border bg-card px-3 py-8 text-center text-sm text-muted-foreground">
+        <p v-if="!sections.length" data-test="no-menu" class="rounded-lg border border-border bg-card px-3 py-8 text-center text-sm text-muted-foreground">
             {{ $t('menu.unavailable') }}
         </p>
 
-        <ul v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <li v-for="pizza in menu.products" :key="pizza.id">
-                <MenuItemCard
-                    :product="pizza"
-                    :max-qty="maxQty"
-                    :disabled="disabled"
-                    :adding="addingId === pizza.id"
-                    @order="(qty) => emit('order', pizza, qty)"
-                />
-            </li>
-        </ul>
+        <div v-else class="space-y-10">
+            <MenuSection
+                v-for="section in sections"
+                :key="section.key"
+                :section="section"
+                :titled="titled"
+                :max-per-order="titled ? maxPerOrder : undefined"
+                :max-qty-for="maxQtyFor"
+                :disabled="disabled"
+                :adding-id="addingId"
+                @order="(product, qty) => emit('order', product, qty)"
+            />
+        </div>
     </section>
 </template>

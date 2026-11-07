@@ -60,7 +60,8 @@ describe('PizzaList', () => {
 
     it('tells visitors the per-order cap up front, and says nothing when it is unknown', () => {
         const wrapper = mount(PizzaList, { props: { menu, maxPerOrder: 4, remaining: 20 } })
-        expect(wrapper.text()).toContain('Max 4 per order')
+        expect(wrapper.text()).toContain('Max 4 pizzas per order')
+        expect(mount(PizzaList, { props: { menu, maxPerOrder: 1 } }).text()).toContain('Max 1 pizza per order')
 
         expect(mount(PizzaList, { props: { menu } }).text()).not.toContain('per order')
     })
@@ -84,6 +85,111 @@ describe('PizzaList', () => {
         await wrapper.findAll('[data-test="order"]')[0]!.trigger('click')
 
         expect(wrapper.emitted('order')?.[0]).toMatchObject([{ id: 'p1' }, 1])
+    })
+
+    describe('only pizzas (limited products) are capped', () => {
+        const mixed = {
+            ...menu,
+            products: [
+                { id: 'p1', title: 'Margherita', description: null, base_price: 2200, limited: true },
+                { id: 'd1', title: 'Soda', description: null, base_price: 300, limited: false },
+            ],
+        }
+
+        async function orderQty(wrapper: ReturnType<typeof mount>, index: number, qty: string) {
+            const qtyInput = wrapper.findAll('[data-test="qty"]')[index]!
+            await qtyInput.setValue(qty)
+            await qtyInput.trigger('change')
+            await qtyInput.trigger('blur')
+            await wrapper.findAll('[data-test="order"]')[index]!.trigger('click')
+        }
+
+        it('lets a non-pizza product go past max_per_order and what is left', async () => {
+            const wrapper = mount(PizzaList, { props: { menu: mixed, maxPerOrder: 2, remaining: 1 } })
+
+            await orderQty(wrapper, 1, '6')
+
+            expect(wrapper.emitted('order')?.[0]).toMatchObject([{ id: 'd1' }, 6])
+        })
+
+        it('still caps a pizza on the same menu', async () => {
+            const wrapper = mount(PizzaList, { props: { menu: mixed, maxPerOrder: 2, remaining: 20 } })
+
+            await orderQty(wrapper, 0, '6')
+
+            expect(wrapper.emitted('order')?.[0]).toMatchObject([{ id: 'p1' }, 2])
+        })
+
+        it('caps a product without the flag, as an older server would send', async () => {
+            const wrapper = mount(PizzaList, { props: { menu, maxPerOrder: 2, remaining: 20 } })
+
+            await orderQty(wrapper, 1, '6')
+
+            expect(wrapper.emitted('order')?.[0]).toMatchObject([{ id: 'p2' }, 2])
+        })
+
+        it('hides the per-order note when no product on the menu is limited', () => {
+            const drinksOnly = { ...menu, products: [mixed.products[1]!] }
+
+            expect(mount(PizzaList, { props: { menu: drinksOnly, maxPerOrder: 2 } }).text()).not.toContain('per order')
+        })
+    })
+
+    it('shows an out-of-stock product but does not let it be ordered', async () => {
+        const withSoldOut = { ...menu, products: [{ ...menu.products[0]!, available: false }, menu.products[1]!] }
+        const wrapper = mount(PizzaList, { props: { menu: withSoldOut } })
+
+        expect(wrapper.findAll('li')).toHaveLength(2)
+        expect(wrapper.findAll('[data-test="out-of-stock"]')).toHaveLength(1)
+
+        const [soldOut, inStock] = wrapper.findAll('[data-test="order"]')
+        expect(soldOut!.attributes('disabled')).toBeDefined()
+        expect(soldOut!.attributes('aria-label')).toBe('Margherita is out of stock')
+        expect(wrapper.findAll('[data-test="qty"]')[0]!.attributes('disabled')).toBeDefined()
+
+        // The other card is unaffected
+        expect(inStock!.attributes('disabled')).toBeUndefined()
+        await inStock!.trigger('click')
+        expect(wrapper.emitted('order')?.[0]).toMatchObject([{ id: 'p2' }, 1])
+    })
+
+    describe('sections by product type', () => {
+        const mixed = {
+            ...menu,
+            products: [
+                { id: 'p1', title: 'Margherita', description: null, base_price: 2200, product_type: 1, type_name: 'Pizza', limited: true },
+                { id: 'd1', title: 'Soda', description: null, base_price: 300, product_type: 2, type_name: 'Drinks', limited: false, available: false },
+                { id: 'p2', title: 'Pepperoni', description: null, base_price: 2450, product_type: 1, type_name: 'Pizza', limited: true },
+            ],
+        }
+
+        it('shows one titled section per type, in menu order', () => {
+            const wrapper = mount(PizzaList, { props: { menu: mixed } })
+
+            const sections = wrapper.findAll('[data-test="menu-section"]')
+            expect(wrapper.findAll('[data-test="section-title"]').map((h) => h.text())).toEqual(['Pizza', 'Drinks'])
+            expect(sections[0]!.findAll('h4').map((h) => h.text())).toEqual(['Margherita', 'Pepperoni'])
+            // An out-of-stock product still shows in its section
+            expect(sections[1]!.find('[data-test="out-of-stock"]').exists()).toBe(true)
+        })
+
+        it('puts the per-order note on the Pizza heading, not the page header', () => {
+            const wrapper = mount(PizzaList, { props: { menu: mixed, maxPerOrder: 4 } })
+
+            const notes = wrapper.findAll('[data-test="max-per-order"]')
+            expect(notes).toHaveLength(1)
+            expect(wrapper.findAll('[data-test="menu-section"]')[0]!.text()).toContain('Max 4 pizzas per order')
+        })
+
+        it('shows no section headings when the menu has a single type', () => {
+            const pizzasOnly = { ...mixed, products: [mixed.products[0]!, mixed.products[2]!] }
+            const wrapper = mount(PizzaList, { props: { menu: pizzasOnly, maxPerOrder: 4 } })
+
+            expect(wrapper.find('[data-test="section-title"]').exists()).toBe(false)
+            expect(wrapper.findAll('h3').map((h) => h.text())).toEqual(['Margherita', 'Pepperoni'])
+            expect(wrapper.get('#pizza-list-title').text()).toBe('Menu')
+            expect(wrapper.text()).toContain('Max 4 pizzas per order')
+        })
     })
 
     it('names the pizza on each order button and quantity field for screen readers', () => {

@@ -60,11 +60,13 @@ export default {
 
     menu: {
         title: 'Menu',
-        maxPerOrder: 'Max {n} per order',
+        maxPerOrder: 'Max {n} pizza per order | Max {n} pizza per order | Max {n} pizzas per order',
         unavailable: 'Menu not available yet.',
         order: 'Order',
         orderItem: 'Order {title}',
         adding: 'Adding…',
+        outOfStock: 'Out of stock',
+        outOfStockItem: '{title} is out of stock',
         quantityFor: 'Quantity of {title}',
         added: '{title} added to your cart | {title} added to your cart | {n} × {title} added to your cart',
         viewCart: 'View cart',
