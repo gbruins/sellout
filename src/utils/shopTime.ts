@@ -1,3 +1,5 @@
+import { i18n } from '@/plugins/i18n'
+
 // The server stores UTC. Every date/time shown to customers is formatted in the shop's own
 // tenant timezone (from GET /services/next's `timezone` field — specs/004-multi-tenant-supabase
 // T033), not a fixed zone. This fallback only applies before that response has loaded.
@@ -6,7 +8,7 @@ export const DEFAULT_SHOP_TIME_ZONE = 'America/Los_Angeles'
 const toDate = (value: string | Date) => (value instanceof Date ? value : new Date(value))
 
 const format = (value: string | Date, timeZone: string, options: Intl.DateTimeFormatOptions) =>
-    new Intl.DateTimeFormat('en-US', { timeZone, ...options }).format(toDate(value))
+    new Intl.DateTimeFormat(i18n.global.locale.value, { timeZone, ...options }).format(toDate(value))
 
 export const formatShopDate = (value: string | Date, timeZone: string = DEFAULT_SHOP_TIME_ZONE) =>
     format(value, timeZone, { weekday: 'long', month: 'long', day: 'numeric' })

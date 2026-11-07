@@ -1,6 +1,7 @@
-import { computed, inject, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { RealtimeChannel } from '@supabase/supabase-js'
+import { api, type ServiceMenu, type ServiceState, type ServiceStatus, type ServiceWindow, type Shop } from '@/api'
 import { getServiceRealtimeClient } from '@/plugins/serviceRealtime'
 import { DEFAULT_SHOP_TIME_ZONE } from '@/utils/shopTime'
 
@@ -17,50 +18,17 @@ const REALTIME_RETRY_MS = 60 * 1000
 // items reserved back-to-back during checkout) — coalesce into one refetch instead of one per event.
 const REFETCH_DEBOUNCE_MS = 400
 
-export type ServiceStatus = 'open' | 'sold_out' | 'upcoming' | 'none'
-
-export interface ServiceWindow {
-    id: string
-    start_at: string
-    end_at: string
-    notes: string | null
-    inventory_count: number
-    max_per_order: number
-}
-
-export interface MenuProduct {
-    id: string
-    title: string
-    description: string | null
-    base_price: number | null
-}
-
-export interface ServiceMenu {
-    id: string
-    title: string
-    description: string | null
-    products: MenuProduct[]
-}
-
-export interface ServiceState {
-    status: ServiceStatus
-    server_now: string
-    timezone: string | null
-    service: ServiceWindow | null
-    remaining?: number
-    menu?: ServiceMenu | null
-    next_service: ServiceWindow | null
-}
+export type { MenuProduct, ServiceMenu, ServiceState, ServiceStatus, ServiceWindow, Shop } from '@/api'
 
 export const useServiceStore = defineStore('service', () => {
-    const api = inject<Record<string, any>>('$api') // eslint-disable-line @typescript-eslint/no-explicit-any
-
+    // null until the first response arrives — never read that as "closed"
     const status = ref<ServiceStatus | null>(null)
     const timezone = ref<string>(DEFAULT_SHOP_TIME_ZONE)
     const service = ref<ServiceWindow | null>(null)
     const remaining = ref(0)
     const menu = ref<ServiceMenu | null>(null)
     const nextService = ref<ServiceWindow | null>(null)
+    const shop = ref<Shop | null>(null)
     const loading = ref(false)
     const error = ref(false)
     // True while the live stream is down, so the shown data may be out of date
@@ -80,6 +48,7 @@ export const useServiceStore = defineStore('service', () => {
         remaining.value = state.remaining ?? 0
         menu.value = state.menu ?? null
         nextService.value = state.next_service
+        shop.value = state.shop ?? null
     }
 
     async function load() {
@@ -133,13 +102,6 @@ export const useServiceStore = defineStore('service', () => {
             await load()
             scheduleBoundary()
         }, Math.min(delay + 500, 2 ** 31 - 1))
-    }
-
-    function receive(state: ServiceState) {
-        apply(state)
-        error.value = false
-        stale.value = false
-        scheduleBoundary()
     }
 
     function stopPolling() {
@@ -264,5 +226,18 @@ export const useServiceStore = defineStore('service', () => {
         clearBoundaryTimer()
     }
 
-    return { stale, connect, disconnect, receive, status, timezone, service, remaining, menu, nextService, loading, error, serverOffsetMs, total, now, apply, load, retry }
+    // Mobile browsers freeze background tabs and drop sockets without telling the channel.
+    // Coming back to the tab refetches, and re-establishes Realtime if it was lost.
+    function resume() {
+        if(!realtimeRetryTimer) {
+            return
+        }
+
+        load()
+        if(!channel) {
+            startRealtime()
+        }
+    }
+
+    return { stale, connect, disconnect, resume, status, timezone, shop, service, remaining, menu, nextService, loading, error, serverOffsetMs, total, now, load, retry }
 })

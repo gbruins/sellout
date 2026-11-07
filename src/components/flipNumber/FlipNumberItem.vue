@@ -53,25 +53,27 @@ onBeforeUnmount(() => {
 .flip {
   display: inline-block;
   position: relative;
-  width: 2.75rem;
-  height: 4.125rem;
-  line-height: 4.125rem;
+  width: 3.5rem;
+  height: 5.25rem;
+  line-height: 5.25rem;
   border: solid 1px #171310;
   border-radius: 6px;
   background: #2b241d;
-  font-size: 2.75rem;
+  font-size: 3.5rem;
   color: #ffffff;
   text-align: center;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* Inter's tabular figures keep digits a fixed width without a monospace font's slashed zero */
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
   font-weight: 700;
 }
 
 @media (min-width: 640px) {
   .flip {
-    width: 4.25rem;
-    height: 6.25rem;
-    font-size: 4.25rem;
-    line-height: 6.25rem;
+    width: 5.5rem;
+    height: 8rem;
+    font-size: 5.5rem;
+    line-height: 8rem;
   }
 }
 
@@ -99,7 +101,7 @@ onBeforeUnmount(() => {
   line-height: 0;
 }
 
-/*向下翻*/
+/* Flip down */
 .flip.down .front:before {
   z-index: 3;
 }
@@ -107,7 +109,7 @@ onBeforeUnmount(() => {
 .flip.down .back:after {
   z-index: 2;
   transform-origin: 50% 0%;
-  transform: perspective(160px) rotateX(180deg);
+  transform: perspective(240px) rotateX(180deg);
 }
 
 .flip.down .front:after,
@@ -126,23 +128,30 @@ onBeforeUnmount(() => {
   animation: backFlipDown 0.3s ease-in-out both;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .flip.down.go .front:before,
+  .flip.down.go .back:after {
+    animation: none;
+  }
+}
+
 @keyframes frontFlipDown {
   0% {
-    transform: perspective(160px) rotateX(0deg);
+    transform: perspective(240px) rotateX(0deg);
   }
 
   100% {
-    transform: perspective(160px) rotateX(-180deg);
+    transform: perspective(240px) rotateX(-180deg);
   }
 }
 
 @keyframes backFlipDown {
   0% {
-    transform: perspective(160px) rotateX(180deg);
+    transform: perspective(240px) rotateX(180deg);
   }
 
   100% {
-    transform: perspective(160px) rotateX(0deg);
+    transform: perspective(240px) rotateX(0deg);
   }
 }
 

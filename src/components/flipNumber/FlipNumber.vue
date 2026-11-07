@@ -1,5 +1,3 @@
-
-
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import FlipNumberItem from './FlipNumberItem.vue'

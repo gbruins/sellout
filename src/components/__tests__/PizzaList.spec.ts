@@ -85,4 +85,31 @@ describe('PizzaList', () => {
 
         expect(wrapper.emitted('order')?.[0]).toMatchObject([{ id: 'p1' }, 1])
     })
+
+    it('names the pizza on each order button and quantity field for screen readers', () => {
+        const wrapper = mount(PizzaList, { props: { menu } })
+
+        expect(wrapper.findAll('[data-test="order"]').map((b) => b.attributes('aria-label'))).toEqual(['Order Margherita', 'Order Pepperoni'])
+        expect(wrapper.findAll('[data-test="qty"]')[0]!.attributes('aria-label')).toBe('Quantity of Margherita')
+    })
+
+    it('shows progress only on the card being added', () => {
+        const wrapper = mount(PizzaList, { props: { menu, disabled: true, addingId: 'p2' } })
+
+        const buttons = wrapper.findAll('[data-test="order"]')
+        expect(buttons[0]!.text()).toBe('Order')
+        expect(buttons[1]!.text()).toBe('Adding…')
+
+        // The card being added gets the animated border; the others don't
+        const cards = wrapper.findAll('[data-slot="card"]')
+        expect(cards[0]!.classes()).not.toContain('card-adding')
+        expect(cards[1]!.classes()).toContain('card-adding')
+    })
+
+    it('shows the product photo when there is one', () => {
+        const withImage = { ...menu, products: [{ ...menu.products[0]!, image: 'https://example.com/m.jpg' }] }
+        const wrapper = mount(PizzaList, { props: { menu: withImage } })
+
+        expect(wrapper.get('[data-test="product-image"]').attributes('src')).toBe('https://example.com/m.jpg')
+    })
 })

@@ -1,38 +1,45 @@
-const MESSAGES: Record<string, string> = {
-    no_open_service: 'The shop is not open right now.',
-    service_closed: 'The shop is not open right now.',
-    sold_out: 'Sorry, we are sold out.',
-    checkout_in_progress: 'Payment is in progress for this cart. Continue to payment or cancel it first.',
+import { errorDetail, errorStatus } from '@/api'
+
+// A message stored as an i18n key so components render it with $t(), not as English text
+export interface Message {
+    key: string
+    params?: Record<string, unknown>
+    plural?: number
 }
 
-interface ApiErrorLike {
-    response?: { status?: number, data?: { message?: string, data?: { code?: string, max_per_order?: number, remaining?: number, title?: string } } }
+const BY_CODE: Record<string, string> = {
+    no_open_service: 'errors.notOpen',
+    service_closed: 'errors.notOpen',
+    sold_out: 'errors.soldOut',
+    checkout_in_progress: 'errors.checkoutInProgress',
 }
 
 /**
  * Turns a failed cart or checkout call into a message for the customer.
  * The server sends a `code` with 409 responses about service hours, stock and the order cap.
  */
-export function cartErrorMessage(error: unknown): string {
-    const response = (error as ApiErrorLike)?.response
-    const detail = response?.data?.data
+export function cartErrorMessage(error: unknown): Message {
+    const detail = errorDetail(error)
 
-    if(response?.status === 409 && detail?.code) {
+    if(errorStatus(error) === 409 && detail?.code) {
         if(detail.code === 'over_limit') {
             const limit = Math.min(detail.max_per_order ?? Infinity, detail.remaining ?? Infinity)
             return Number.isFinite(limit)
-                ? `You can order up to ${limit} ${limit === 1 ? 'pizza' : 'pizzas'}.`
-                : 'That is more pizzas than you can order.'
+                ? { key: 'errors.overLimit', params: { n: limit }, plural: limit }
+                : { key: 'errors.overLimitUnknown' }
         }
 
         if(detail.code === 'item_unavailable') {
-            return `${detail.title ? `"${detail.title}"` : 'An item'} is no longer available. Remove it to continue.`
+            return detail.title
+                ? { key: 'errors.itemUnavailable', params: { title: detail.title } }
+                : { key: 'errors.anItemUnavailable' }
         }
 
-        if(MESSAGES[detail.code]) {
-            return MESSAGES[detail.code]!
+        const key = BY_CODE[detail.code]
+        if(key) {
+            return { key }
         }
     }
 
-    return response?.data?.message || 'Something went wrong. Please try again.'
+    return { key: 'errors.generic' }
 }

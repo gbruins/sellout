@@ -1,9 +1,8 @@
-import { inject, ref } from 'vue'
+import { ref } from 'vue'
 import { defineStore } from 'pinia'
+import { api } from '@/api'
 
 export const useSubscribeStore = defineStore('subscribe', () => {
-    const api = inject<Record<string, any>>('$api') // eslint-disable-line @typescript-eslint/no-explicit-any
-
     const loading = ref(false)
     const error = ref(false)
     const subscribed = ref(false)
