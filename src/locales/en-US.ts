@@ -3,7 +3,6 @@
 export default {
     app: {
         name: 'Sellout Pizza',
-        tagline: 'Fresh slices, good company.',
         homeLabel: 'Sellout Pizza home',
         copyright: '© {year} Sellout Pizza',
     },
