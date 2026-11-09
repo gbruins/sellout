@@ -60,7 +60,7 @@ services:
       # itself is still created in SQL without the suffix (`CREATE ROLE strawberry_app LOGIN
       # PASSWORD '...'`); the suffix is only how Supavisor routes the connection. Migrations
       # that GRANT/REVOKE to this role strip the suffix back off before using it in SQL
-      # (strawberry-server/server/db/migrations/96_multi_tenant_foundation.js).
+      # (strawberry-server/server/db/migrations/20251106123100_multi_tenant_foundation.js).
       - key: SUPABASE_APP_DB_USER
         sync: false
       - key: SUPABASE_APP_DB_PASS
@@ -87,6 +87,24 @@ services:
       # alongside the onrender.com one rather than replacing it.
       - key: CORS_ORIGINS
         sync: false
+      # Postmark server API token (NotificationService.js) — required for order-receipt and
+      # "we're open" alert emails alike; missing it throws `POSTMARK_API_KEY is not set` and no
+      # email of any kind sends. From Postmark's dashboard, this project's Server > API Tokens.
+      - key: POSTMARK_API_KEY
+        sync: false
+      # "From" address for "we're open" alert emails only (not order receipts — see
+      # EMAIL_ORDERS below). Sent on Postmark's broadcast stream, deliberately a different
+      # address/stream than EMAIL_ORDERS to isolate transactional sender reputation.
+      - key: EMAIL_INFO
+        sync: false
+      # "From" address for order-receipt and order-ready emails (NotificationService.js
+      # sendReceiptEmail/sendOrderReadyEmail) — missing it throws `EMAIL_ORDERS is not set` and
+      # silently fails the post-checkout confirmation email. Requires the "order-receipt" and
+      # "order-ready" templates to already exist on this Postmark server — run `npm run
+      # create-receipt-template` / `create-order-ready-template` once per Postmark server
+      # (pointed at prod's POSTMARK_API_KEY) if they don't exist yet.
+      - key: EMAIL_ORDERS
+        sync: false
 
   - type: web
     name: sellout-storefront
@@ -109,6 +127,20 @@ services:
       - key: VITE_API_USER
         value: store
       - key: VITE_API_KEY
+        sync: false
+      # Stripe's *publishable* key (safe to bundle client-side, unlike STRIPE_SECRET_KEY on the
+      # server) — mounts Stripe's Embedded Checkout form on /cart. Same Stripe account as
+      # strawberry-server's STRIPE_SECRET_KEY above; use the live-mode (pk_live_...) key here.
+      - key: VITE_STRIPE_PUBLISHABLE_KEY
+        sync: false
+      # Used client-side only for a Realtime subscription to the live store-status signal
+      # (src/plugins/serviceRealtime.ts) — no Supabase Auth involved, this storefront has no
+      # user identity. Same production Supabase project as strawberry-admin/strawberry-server's
+      # SUPABASE_* vars above. The anon key is meant to be public; RLS is what actually protects
+      # the data, not secrecy of this key.
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
         sync: false
 
   - type: web
