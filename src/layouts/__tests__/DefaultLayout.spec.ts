@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import DefaultLayout from '../DefaultLayout.vue'
 import { stubApi } from '@/test/stubApi'
 
-vi.mock('@/plugins/serviceRealtime', () => ({ getServiceRealtimeClient: () => ({ removeChannel: vi.fn<(...args: never[]) => unknown>() }) }))
+vi.mock('@/plugins/serviceRealtime', () => ({ getServiceRealtimeClient: () => ({ removeChannel: vi.fn<(...args: never[]) => unknown>() }), setServiceRealtimeToken: vi.fn() }))
 
 const mountLayout = () => {
     const getNext = vi.fn<(...args: never[]) => Promise<unknown>>(async () => ({ status: 'open', server_now: new Date().toISOString(), timezone: null, service: null, next_service: null, remaining: 5 }))

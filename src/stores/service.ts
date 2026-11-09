@@ -2,7 +2,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { api, type ServiceMenu, type ServiceState, type ServiceStatus, type ServiceWindow, type Shop } from '@/api'
-import { getServiceRealtimeClient } from '@/plugins/serviceRealtime'
+import { getServiceRealtimeClient, setServiceRealtimeToken } from '@/plugins/serviceRealtime'
 import { DEFAULT_SHOP_TIME_ZONE } from '@/utils/shopTime'
 
 // Fallback cadence when Realtime isn't available (no realtime_jwt — e.g. SUPABASE_JWT_SECRET
@@ -160,7 +160,7 @@ export const useServiceStore = defineStore('service', () => {
         stopPolling()
 
         const client = getServiceRealtimeClient()
-        client.realtime.setAuth(token.realtime_jwt)
+        setServiceRealtimeToken(token.realtime_jwt)
 
         channel = client
             .channel(`service-activity-${token.tenant_id}`)

@@ -37,7 +37,7 @@ const { fakeClient, getHandlers, getStatusCb, resetFakeRealtime } = vi.hoisted((
     }
 })
 
-vi.mock('@/plugins/serviceRealtime', () => ({ getServiceRealtimeClient: () => fakeClient }))
+vi.mock('@/plugins/serviceRealtime', () => ({ getServiceRealtimeClient: () => fakeClient, setServiceRealtimeToken: vi.fn() }))
 
 const triggerActivity = () => getHandlers().forEach((h) => h())
 const triggerStatus = (status: string) => getStatusCb()?.(status)
