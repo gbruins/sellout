@@ -45,6 +45,13 @@ services:
         sync: false
       - key: SUPABASE_JWT_AUD
         value: authenticated
+      # Project Settings -> API -> JWT Settings -> "Legacy JWT Secret" (NOT the service_role
+      # key). Used to self-sign short-lived Supabase Realtime tokens for clients with no GoTrue
+      # session (e.g. kitchen stations, which log in by PIN). Missing this degrades Realtime
+      # features to polling rather than erroring — e.g. strawberry-admin's kitchen board shows
+      # "Live updates unavailable — refreshing automatically" instead of failing outright.
+      - key: SUPABASE_JWT_SECRET
+        sync: false
       # Restricted app role (NOT postgres) — RLS is silently bypassed by the owner/superuser
       # connection otherwise (research.md #3 addendum). Same role name as local dev's.
       #
@@ -69,6 +76,15 @@ services:
         value: "true"
       - key: STOREFRONT_URL
         sync: false
+      # Comma-separated allowed origins, NO quotes and NO trailing slashes (Render's env var
+      # field stores exactly what you type — quoting it produces the literal string '"value"',
+      # which matches no real browser Origin header). Also can't be "*": server/index.js sets
+      # `credentials: true` on CORS, and the spec forbids combining that with a wildcard origin
+      # — browsers reject it outright regardless of server config. Must list every origin that
+      # calls this API from a browser (admin UI + storefront), e.g.:
+      #   https://strawberry-admin.onrender.com,https://sellout-storefront.onrender.com
+      # Add the real storefront domain here too once DNS is live (https://www.selloutpizza.com),
+      # alongside the onrender.com one rather than replacing it.
       - key: CORS_ORIGINS
         sync: false
 
