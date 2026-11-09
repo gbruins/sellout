@@ -19,8 +19,18 @@ services:
       - key: TRUSTED_PROXY_HOPS
         value: "1"
       # Production Supabase project — a SEPARATE Supabase project from local dev's, set once
-      # in the Render dashboard (specs/004-multi-tenant-supabase). Direct/session-mode
-      # connection (research.md #1), not the pgbouncer pooler.
+      # in the Render dashboard (specs/004-multi-tenant-supabase).
+      #
+      # MUST be Supabase's Supavisor SESSION pooler host (Dashboard → Connect → "Session
+      # pooler"), NOT the direct connection (db.<project-ref>.supabase.co) and NOT the
+      # transaction-mode pooler on port 6543. Render has no outbound IPv6, and the direct
+      # host is IPv6-only unless Supabase's paid IPv4 add-on is enabled — using it here fails
+      # the build with `getaddrinfo ENOTFOUND db.<project-ref>.supabase.co`. Session mode
+      # (port 5432, on the pooler host) is IPv4-reachable and still preserves per-connection
+      # session state, which this app needs for SET LOCAL (RLS tenant-scoping) and
+      # LISTEN/NOTIFY — transaction mode does not.
+      #   SUPABASE_DB_HOST = aws-0-<region>.pooler.supabase.com
+      #   SUPABASE_DB_USER = postgres.<project-ref>   (note the project-ref suffix)
       - key: SUPABASE_DB_HOST
         sync: false
       - key: SUPABASE_DB_PORT
@@ -37,6 +47,13 @@ services:
         value: authenticated
       # Restricted app role (NOT postgres) — RLS is silently bypassed by the owner/superuser
       # connection otherwise (research.md #3 addendum). Same role name as local dev's.
+      #
+      # Through the session pooler above, this value must ALSO carry the project-ref suffix —
+      # e.g. "strawberry_app.<project-ref>" — same convention as SUPABASE_DB_USER. The role
+      # itself is still created in SQL without the suffix (`CREATE ROLE strawberry_app LOGIN
+      # PASSWORD '...'`); the suffix is only how Supavisor routes the connection. Migrations
+      # that GRANT/REVOKE to this role strip the suffix back off before using it in SQL
+      # (strawberry-server/server/db/migrations/96_multi_tenant_foundation.js).
       - key: SUPABASE_APP_DB_USER
         sync: false
       - key: SUPABASE_APP_DB_PASS
