@@ -19,8 +19,11 @@ export const formatShopTime = (value: string | Date, timeZone: string = DEFAULT_
 export const formatShopZone = (value: string | Date, timeZone: string = DEFAULT_SHOP_TIME_ZONE) =>
     format(value, timeZone, { timeZoneName: 'short' }).split(' ').pop() as string
 
+// Split into the start date and the times so they can be shown on separate lines. A range that
+// spans midnight repeats the end date inside `times`.
 export const formatShopRange = (start: string | Date, end: string | Date, timeZone: string = DEFAULT_SHOP_TIME_ZONE) => {
-    const sameDay = formatShopDate(start, timeZone) === formatShopDate(end, timeZone)
+    const date = formatShopDate(start, timeZone)
+    const sameDay = date === formatShopDate(end, timeZone)
     const endPart = sameDay ? formatShopTime(end, timeZone) : `${formatShopDate(end, timeZone)}, ${formatShopTime(end, timeZone)}`
-    return `${formatShopDate(start, timeZone)}, ${formatShopTime(start, timeZone)} – ${endPart} ${formatShopZone(end, timeZone)}`
+    return { date, times: `${formatShopTime(start, timeZone)} – ${endPart} ${formatShopZone(end, timeZone)}` }
 }

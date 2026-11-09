@@ -29,9 +29,9 @@ describe('shopTime', () => {
 
     it('formats a range, repeating the date when it spans midnight', () => {
         expect(formatShopRange('2026-10-16T20:00:00.000Z', '2026-10-17T02:00:00.000Z'))
-            .toBe('Friday, October 16, 1:00 PM – 7:00 PM PDT')
+            .toEqual({ date: 'Friday, October 16', times: '1:00 PM – 7:00 PM PDT' })
         expect(formatShopRange('2026-10-17T05:00:00.000Z', '2026-10-17T08:00:00.000Z'))
-            .toBe('Friday, October 16, 10:00 PM – Saturday, October 17, 1:00 AM PDT')
+            .toEqual({ date: 'Friday, October 16', times: '10:00 PM – Saturday, October 17, 1:00 AM PDT' })
     })
 
     it('formats in a tenant timezone other than the default (specs/004-multi-tenant-supabase T033)', () => {

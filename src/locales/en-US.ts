@@ -149,6 +149,7 @@ export default {
         paid: 'Your payment was received.',
         codeLabel: 'Your pickup code',
         codeHint: 'Give this number to our staff when you arrive.',
+        readyEmail: "We'll email you at {email} when your order is ready!",
         receipt: 'A receipt was sent to {email}.',
         summary: 'Your order',
         line: '{qty} × {title}',

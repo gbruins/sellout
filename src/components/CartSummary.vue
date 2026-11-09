@@ -17,12 +17,15 @@ const total = computed(() => formatPrice(cart.cart?.grand_total))
 
 <template>
     <div>
-        <div class="mt-4 flex items-center justify-between text-base text-foreground">
-            <span class="font-semibold">{{ $t('cart.total') }}</span>
-            <span data-test="total" class="font-heading text-lg font-semibold text-primary">{{ total }}</span>
-        </div>
+        <!-- Cart step only: once paying, Stripe's form shows the total prominently itself -->
+        <template v-if="!cart.locked">
+            <div class="mt-4 flex items-center justify-between text-base text-foreground">
+                <span class="font-semibold">{{ $t('cart.total') }}</span>
+                <span data-test="total" class="font-heading text-lg font-semibold text-primary">{{ total }}</span>
+            </div>
 
-        <p class="mt-2 text-xs text-muted-foreground" data-test="pickup">{{ $t('pickup.only') }}</p>
+            <p class="mt-2 text-xs text-muted-foreground" data-test="pickup">{{ $t('pickup.only') }}</p>
+        </template>
         <PickupInfo compact class="mt-3" />
 
         <template v-if="cart.locked">

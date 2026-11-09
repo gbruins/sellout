@@ -12,7 +12,7 @@ const props = defineProps<{ service: ServiceWindow | null, soldOut?: boolean }>(
 
 const serviceStore = useServiceStore()
 
-const range = computed(() => props.service ? formatShopRange(props.service.start_at, props.service.end_at, serviceStore.timezone) : '')
+const range = computed(() => props.service ? formatShopRange(props.service.start_at, props.service.end_at, serviceStore.timezone) : null)
 </script>
 
 <template>
@@ -27,7 +27,8 @@ const range = computed(() => props.service ? formatShopRange(props.service.start
                     <h1 id="service-closed-title" class="font-heading text-2xl font-semibold text-foreground sm:text-3xl">
                         {{ $t('closed.nextService') }}
                     </h1>
-                    <p data-test="service-range" class="mt-3 text-lg text-foreground">{{ range }}</p>
+                    <p v-if="range" data-test="service-date" class="mt-3 text-lg text-foreground">{{ range.date }}</p>
+                    <p v-if="range" data-test="service-times" class="mt-1 text-xl font-semibold text-foreground sm:text-2xl">{{ range.times }}</p>
                     <p v-if="service.notes" data-test="service-notes" class="mt-2 text-sm text-muted-foreground">{{ service.notes }}</p>
                 </template>
 

@@ -35,7 +35,8 @@ const mountHome = async (getNext: () => Promise<unknown>, cart: Record<string, (
 describe('HomeView', () => {
     it('shows the next service in the shop time zone when closed', async () => {
         const wrapper = await mountHome(async () => ({ ...base, status: 'upcoming', service: win }))
-        expect(wrapper.get('[data-test="service-range"]').text()).toBe('Saturday, October 17, 12:00 PM – 7:00 PM PDT')
+        expect(wrapper.get('[data-test="service-date"]').text()).toBe('Saturday, October 17')
+        expect(wrapper.get('[data-test="service-times"]').text()).toBe('12:00 PM – 7:00 PM PDT')
         expect(wrapper.get('[data-test="service-notes"]').text()).toBe('Pickup at the garage door')
         expect(wrapper.text()).not.toContain('Pizzas remaining')
     })
@@ -78,7 +79,8 @@ describe('HomeView', () => {
         const wrapper = await mountHome(async () => ({ ...base, status: 'sold_out', service: win, remaining: 0, menu: null, next_service: next }))
         expect(wrapper.text()).toContain("We're sold out for tonight")
         expect(wrapper.text()).not.toContain('Accepting orders')
-        expect(wrapper.get('[data-test="service-range"]').text()).toBe('Saturday, October 24, 12:00 PM – 7:00 PM PDT')
+        expect(wrapper.get('[data-test="service-date"]').text()).toBe('Saturday, October 24')
+        expect(wrapper.get('[data-test="service-times"]').text()).toBe('12:00 PM – 7:00 PM PDT')
     })
 
     it('keeps the menu visible but disables ordering when sold out', async () => {

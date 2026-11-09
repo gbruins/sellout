@@ -171,6 +171,9 @@ describe('CartView', () => {
         })
         await flushPromises()
         expect(wrapper.find('[data-test=plus]').exists()).toBe(false)
+        // Stripe's form shows the total, so ours is hidden on the checkout step
+        expect(wrapper.find('[data-test=total]').exists()).toBe(false)
+        expect(wrapper.find('[data-test=pickup]').exists()).toBe(false)
 
         const note = wrapper.find('[data-test=note]')
         await note.setValue('extra crispy please')

@@ -55,7 +55,17 @@ describe('OrderCompleteView', () => {
         expect(wrapper.get('[data-test="order-items"]').text()).toContain('2 × Margherita')
         expect(wrapper.get('[data-test="order-total"]').text()).toBe('47.96')
         expect(wrapper.text()).toContain('jane@example.com')
+        expect(wrapper.get('[data-test="ready-email"]').text()).toContain('jane@example.com')
         expect(forget).toHaveBeenCalled()
+    })
+
+    it('does not promise a ready email when the order has no billing email', async () => {
+        query = { session_id: 'cs_test_1' }
+        const { wrapper } = mountPage(async () => ({ ...complete, billing_email: null }))
+        await flushPromises()
+
+        expect(wrapper.get('[data-test="pickup-code"]').text()).toBe('142')
+        expect(wrapper.find('[data-test="ready-email"]').exists()).toBe(false)
     })
 
     it('keeps a newer, still-open cart', async () => {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterLink, useRoute } from 'vue-router'
+import { MailIcon } from '@lucide/vue'
 import { useOrderConfirmation } from '@/composables/useOrderConfirmation'
 import { usePrice } from '@/composables/usePrice'
 import PickupInfo from '@/components/PickupInfo.vue'
@@ -14,14 +15,18 @@ const { formatPrice } = usePrice()
 </script>
 
 <template>
-    <section class="mx-auto w-full max-w-2xl px-4 py-16 text-center sm:py-24">
+    <section class="mx-auto w-full max-w-2xl px-4 py-16 text-center">
         <template v-if="state === 'complete' && order">
             <h1 class="font-heading text-3xl font-semibold text-foreground sm:text-4xl">{{ $t('order.thanks') }}</h1>
             <p class="mt-3 text-muted-foreground">{{ $t('order.paid') }}</p>
 
             <p class="mt-8 text-sm font-medium uppercase tracking-wide text-muted-foreground">{{ $t('order.codeLabel') }}</p>
-            <p data-test="pickup-code" class="mt-2 font-heading text-7xl font-bold tracking-widest text-foreground sm:text-8xl">{{ order.pickup_code }}</p>
+            <p data-test="pickup-code" class="mt-2 text-7xl font-bold tracking-widest text-foreground sm:text-8xl">{{ order.pickup_code }}</p>
             <p class="mt-3 text-muted-foreground">{{ $t('order.codeHint') }}</p>
+            <p v-if="order.billing_email" data-test="ready-email" class="mt-6 flex items-center justify-center gap-2 font-medium text-foreground">
+                <MailIcon class="size-5 shrink-0" aria-hidden="true" />
+                <span>{{ $t('order.readyEmail', { email: order.billing_email }) }}</span>
+            </p>
 
             <div class="mx-auto mt-8 max-w-sm text-left">
                 <PickupInfo class="mb-6 rounded-lg border border-border bg-card p-4" />
