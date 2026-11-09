@@ -86,6 +86,10 @@ services:
     envVars:
       - key: VITE_API_BASE_URL
         sync: false
+      # Basic-auth username — arbitrary, never checked against any specific value server-side
+      # (strawberry-server/server/plugins/auth/AuthService.js apiKeyIsValid only requires it be
+      # non-empty; HTTP Basic auth just needs both halves present). The API key alone (below)
+      # is what actually resolves the tenant. "store" is just a label, not a real credential.
       - key: VITE_API_USER
         value: store
       - key: VITE_API_KEY
